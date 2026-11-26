@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-type="software">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-type" content="software">
+  <meta name="site-kind" content="software">
+  <meta name="theme-color" content="#f7f5ef">
+  <meta name="description" content="Preview and download Koi pond and Dark texture, two light and dark themes for T3 Code.">
+  <title>T3 Code themes by Russel</title>
+  <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./previews.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#themes">Skip to themes</a>
+  <header class="site-header wrap">
+    <a class="wordmark" href="./"><span class="mark" aria-hidden="true"></span> T3 Code Themes</a>
+    <nav aria-label="Main navigation">
+      <a href="#themes">Themes</a>
+      <a href="#install">Install</a>
+      <a href="#about">About</a>
+      <button class="site-mode" type="button" aria-label="Dark website" aria-pressed="false" title="Dark website" hidden>
+        <span aria-hidden="true">◐</span><span>Site</span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro wrap" aria-labelledby="page-title">
+      <h1 id="page-title">T3 Code <em>themes.</em></h1>
+      <p>I've been using T3 Code a lot lately, so today I made a couple of themes to get it looking the way I wanted.</p>
+    </section>
+
+    <section id="themes" class="gallery wrap" aria-labelledby="gallery-title">
+      <div class="gallery-bar">
+        <h2 id="gallery-title">Live preview</h2>
+      </div>
+
+      <div class="theme-grid">
+        <article class="theme" aria-labelledby="koi-title">
+          <header>
+            <h3 id="koi-title">Koi pond</h3>
+            <p>A koi swims under slow reflections. Light mode is grayscale.</p>
+            <fieldset class="mode-control" hidden>
+              <legend class="sr-only">Koi pond preview appearance</legend>
+              <label>
+                <input type="radio" name="koi-pond-appearance" value="dark" autocomplete="off" checked>
+                <span>Dark</span>
+              </label>
+              <label>
+                <input type="radio" name="koi-pond-appearance" value="light" autocomplete="off">
+                <span>Light</span>
+              </label>
+            </fieldset>
+          </header>
+          <div class="preview" data-theme="koi-pond" aria-busy="true">
+            <iframe title="Live Koi pond theme preview" sandbox="allow-same-origin" tabindex="-1"></iframe>
+            <p class="preview-status" role="status">Loading preview…</p>
+            <noscript><p>Enable JavaScript to view the live preview.</p></noscript>
+          </div>
+          <div class="theme-actions">
+            <a class="download" href="./downloads/koi-pond.json" download>
+              Download JSON <span class="download-arrow" aria-hidden="true">↓</span>
+            </a>
+            <a class="text-link" href="#install-koi">How to install</a>
+          </div>
+          <details class="cpu-note">
+            <summary>CPU usage</summary>
+            <p id="cpu-result">In a short headless Chrome test on my machine, one preview used about 24–28% of one CPU core with the animation running and 0–3% with it paused. CPU usage in T3 Code will vary by device and number of open panes.</p>
+          </details>
+        </article>
+
+        <article class="theme" aria-labelledby="texture-title">
+          <header>
+            <h3 id="texture-title">Dark texture</h3>
+            <p>A still, charcoal grain behind the chat. Light mode flips it to pale gray.</p>
+            <fieldset class="mode-control" hidden>
+              <legend class="sr-only">Dark texture preview appearance</legend>
+              <label>
+                <input type="radio" name="dark-texture-appearance" value="dark" autocomplete="off" checked>
+                <span>Dark</span>
+              </label>
+              <label>
+                <input type="radio" name="dark-texture-appearance" value="light" autocomplete="off">
+                <span>Light</span>
+              </label>
+            </fieldset>
+          </header>
+          <div class="preview" data-theme="dark-texture" aria-busy="true">
+            <iframe title="Live Dark texture theme preview" sandbox="allow-same-origin" tabindex="-1"></iframe>
+            <p class="preview-status" role="status">Loading preview…</p>
+            <noscript><p>Enable JavaScript to view the live preview.</p></noscript>
+          </div>
+          <div class="theme-actions">
+            <a class="download" href="./downloads/dark-texture.zip" download>
+              Download ZIP <span class="download-arrow" aria-hidden="true">↓</span>
+            </a>
+            <a class="text-link" href="#install-texture">How to install</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="install" class="install wrap" aria-labelledby="install-title">
+      <h2 id="install-title">Install a theme</h2>
+      <div class="install-grid">
+        <article id="install-koi">
+          <h3>Koi pond</h3>
+          <ol>
+            <li>Download <code>koi-pond.json</code>.</li>
+            <li>In T3 Code, open <strong>Settings → Appearance</strong> and choose <strong>Import a file</strong>.</li>
+            <li>Open the JSON file and select <strong>Koi pond</strong> in the theme picker.</li>
+          </ol>
+        </article>
+        <article id="install-texture">
+          <h3>Dark texture</h3>
+          <ol>
+            <li>Download and extract <code>dark-texture.zip</code>.</li>
+            <li>Copy <code>dark-texture.png</code> to <code>~/.t3/userdata/themes/</code>. Create the folder if needed.</li>
+            <li>Run this command from the extracted folder to install and select Dark texture.
+              <pre><code>t3 theme set ./dark-texture.json</code></pre>
+            </li>
+          </ol>
+        </article>
+      </div>
+      <p class="install-note">Switch between Light and Dark in <strong>Settings → Appearance</strong>.</p>
+      <details class="screenshots">
+        <summary>T3 Code screenshots</summary>
+        <ul>
+          <li>Koi pond <a href="./screenshots/koi-pond-dark.webp" aria-label="Koi pond dark screenshot">Dark</a> <a href="./screenshots/koi-pond-light.webp" aria-label="Koi pond light screenshot">Light</a></li>
+          <li>Dark texture <a href="./screenshots/dark-texture-dark.webp" aria-label="Dark texture dark screenshot">Dark</a> <a href="./screenshots/dark-texture-light.webp" aria-label="Dark texture light screenshot">Light</a></li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="about" class="about wrap" aria-labelledby="about-title">
+      <h2 id="about-title">About these themes</h2>
+      <p>I'll add more here if I make them. If you've made a theme you'd like to share, <a href="https://github.com/wrestle-R/T3code-Themes/pulls">open a pull request</a>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>Made by Russel</p>
+    <a class="text-link" href="https://github.com/wrestle-R/T3code-Themes">Source on GitHub <span aria-hidden="true">↗</span></a>
+  </footer>
+
+  <template id="preview-content">
+    <div class="demo" data-workspace-area="conversation">
+      <div class="demo-header">
+        <span class="demo-symbol" aria-hidden="true">⌘</span>
+        <span>Theme workshop</span>
+        <span class="demo-label">Sample chat</span>
+      </div>
+      <div class="sample">
+        <p class="prompt">Add a health check to the API.</p>
+        <div class="reply">
+          <p>Added a route that reports when the server is ready.</p>
+          <code><span>GET</span> /health</code>
+        </div>
+      </div>
+      <div class="composer" data-chat-composer-main-surface aria-hidden="true">
+        <span>Send a follow-up…</span><span class="send">↑</span>
+      </div>
+    </div>
+  </template>
+</body>
+</html>

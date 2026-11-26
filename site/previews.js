@@ -1,0 +1,110 @@
+const previewContent = document.querySelector('#preview-content');
+const siteMode = document.querySelector('.site-mode');
+const darkPreference = matchMedia('(prefers-color-scheme: dark)');
+
+function applySiteMode(mode) {
+  document.documentElement.dataset.appearance = mode;
+  document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#191816' : '#f7f5ef';
+  siteMode.setAttribute('aria-pressed', String(mode === 'dark'));
+}
+
+function storedSiteMode() {
+  try {
+    const saved = localStorage.getItem('t3-themes-site-mode');
+    return saved === 'dark' || saved === 'light' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function followSitePreference() {
+  applySiteMode(storedSiteMode() ?? (darkPreference.matches ? 'dark' : 'light'));
+}
+
+followSitePreference();
+siteMode.hidden = false;
+darkPreference.addEventListener('change', followSitePreference);
+siteMode.addEventListener('click', () => {
+  const mode = document.documentElement.dataset.appearance === 'dark' ? 'light' : 'dark';
+  applySiteMode(mode);
+  try {
+    localStorage.setItem('t3-themes-site-mode', mode);
+  } catch {
+    // The in-page toggle still works when storage is disabled.
+  }
+});
+const previewStyles = new URL('./preview.css', import.meta.url).href;
+const textureAsset = new URL('./assets/dark-texture.webp', import.meta.url).href;
+
+const themeSources = {
+  'koi-pond': './downloads/koi-pond.json',
+  'dark-texture': './assets/dark-texture.json',
+};
+
+const colorTokens = {
+  canvas: 'canvas',
+  text: 'text',
+  messageSurface: 'message',
+  messageForeground: 'message-ink',
+  toolbar: 'chrome',
+  toolbarBorder: 'border',
+  textMuted: 'muted',
+  surfaceRaised: 'composer',
+  accent: 'accent',
+  accentForeground: 'accent-ink',
+};
+
+function colorDeclarations(colors) {
+  return Object.entries(colorTokens)
+    .filter(([token]) => colors[token])
+    .map(([token, property]) => `--${property}: ${colors[token]};`)
+    .join(' ');
+}
+
+async function loadPreview(preview) {
+  const { theme } = preview.dataset;
+  const iframe = preview.querySelector('iframe');
+  const status = preview.querySelector('.preview-status');
+  const modeControl = preview.closest('.theme').querySelector('.mode-control');
+
+  try {
+    const response = await fetch(themeSources[theme]);
+    if (!response.ok) throw new Error(`Theme request returned ${response.status}`);
+    const config = await response.json();
+
+    const loaded = new Promise((resolve) => iframe.addEventListener('load', resolve, { once: true }));
+    iframe.srcdoc = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+      <title>Theme preview</title><link rel="stylesheet" href="${previewStyles}">
+      </head><body>${previewContent.innerHTML}</body></html>`;
+    await loaded;
+
+    const doc = iframe.contentDocument;
+    const css = doc.createElement('style');
+    css.textContent = `
+      :root { --theme-background-image: url("${textureAsset}"); ${colorDeclarations(config.variants.light)} }
+      :root.dark { ${colorDeclarations({ canvas: config.canvas, ...config.colors })} }
+      ${config.css}
+    `;
+    function updatePreviewMode() {
+      doc.documentElement.classList.toggle('dark', modeControl.querySelector(':checked').value === 'dark');
+    }
+    updatePreviewMode();
+    modeControl.addEventListener('change', updatePreviewMode);
+    doc.head.append(css);
+    if (theme === 'koi-pond' && 'IntersectionObserver' in window) {
+      doc.documentElement.setAttribute('data-paused', '');
+      new IntersectionObserver(([entry]) => {
+        doc.documentElement.toggleAttribute('data-paused', !entry.isIntersecting);
+      }).observe(preview);
+    }
+    status.hidden = true;
+    modeControl.hidden = false;
+  } catch (error) {
+    status.textContent = 'Live preview unavailable. The theme is still available to download.';
+    console.error(`Could not load the ${theme} preview.`, error);
+  } finally {
+    preview.setAttribute('aria-busy', 'false');
+  }
+}
+
+document.querySelectorAll('.preview').forEach(loadPreview);
