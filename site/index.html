@@ -20,7 +20,7 @@
       <a href="#themes">Themes</a>
       <a href="#install">Install</a>
       <a href="#about">About</a>
-      <button class="site-mode" type="button" aria-label="Dark website" aria-pressed="false" title="Dark website" hidden>
+      <button class="site-mode" type="button" aria-label="Dark website" aria-pressed="false" hidden>
         <span aria-hidden="true">◐</span><span>Site</span>
       </button>
     </nav>
@@ -67,7 +67,7 @@
           </div>
           <details class="cpu-note">
             <summary>CPU usage</summary>
-            <p id="cpu-result">In a short headless Chrome test on my machine, one preview used about 24–28% of one CPU core with the animation running and 0–3% with it paused. CPU usage in T3 Code will vary by device and number of open panes.</p>
+            <p id="cpu-result">In a short headless Chrome test on my machine, one preview used about 24–28% of one CPU core with the animation running and 0–3% with it paused. CPU usage in T3 Code will vary by device and number of open panes. On this site, the animation pauses offscreen and in background tabs. If you use reduced motion, the koi stays still.</p>
           </details>
         </article>
 
@@ -117,9 +117,13 @@
           <h3>Dark texture</h3>
           <ol>
             <li>Download and extract <code>dark-texture.zip</code>.</li>
-            <li>Copy <code>dark-texture.png</code> to <code>~/.t3/userdata/themes/</code>. Create the folder if needed.</li>
+            <li>Copy <code>dark-texture.png</code> to <code>~/.t3/userdata/themes/</code> so T3 Code can find the wallpaper. Create the folder if needed.</li>
             <li>Run this command from the extracted folder to install and select Dark texture.
-              <pre><code>t3 theme set ./dark-texture.json</code></pre>
+              <div class="command">
+                <pre><code id="install-command">t3 theme set ./dark-texture.json</code></pre>
+                <button class="copy-command" type="button" hidden>Copy command</button>
+              </div>
+              <span class="copy-status" role="status"></span>
             </li>
           </ol>
         </article>
@@ -127,16 +131,30 @@
       <p class="install-note">Switch between Light and Dark in <strong>Settings → Appearance</strong>.</p>
       <details class="screenshots">
         <summary>T3 Code screenshots</summary>
-        <ul>
-          <li>Koi pond <a href="./screenshots/koi-pond-dark.webp" aria-label="Koi pond dark screenshot">Dark</a> <a href="./screenshots/koi-pond-light.webp" aria-label="Koi pond light screenshot">Light</a></li>
-          <li>Dark texture <a href="./screenshots/dark-texture-dark.webp" aria-label="Dark texture dark screenshot">Dark</a> <a href="./screenshots/dark-texture-light.webp" aria-label="Dark texture light screenshot">Light</a></li>
-        </ul>
+        <div class="screenshot-grid">
+          <figure>
+            <img src="./screenshots/koi-pond-dark.webp" width="924" height="668" loading="lazy" alt="Copper koi below the composer on a charcoal background">
+            <figcaption>Koi pond in Dark mode</figcaption>
+          </figure>
+          <figure>
+            <img src="./screenshots/koi-pond-light.webp" width="924" height="668" loading="lazy" alt="Grayscale koi below the composer on a silver background">
+            <figcaption>Koi pond in Light mode</figcaption>
+          </figure>
+          <figure>
+            <img src="./screenshots/dark-texture-dark.webp" width="924" height="668" loading="lazy" alt="Chat composer on a charcoal grain background">
+            <figcaption>Dark texture in Dark mode</figcaption>
+          </figure>
+          <figure>
+            <img src="./screenshots/dark-texture-light.webp" width="924" height="668" loading="lazy" alt="Chat composer on a pale gray grain background">
+            <figcaption>Dark texture in Light mode</figcaption>
+          </figure>
+        </div>
       </details>
     </section>
 
     <section id="about" class="about wrap" aria-labelledby="about-title">
       <h2 id="about-title">About these themes</h2>
-      <p>I'll add more here if I make them. If you've made a theme you'd like to share, <a href="https://github.com/wrestle-R/T3code-Themes/pulls">open a pull request</a>.</p>
+      <p>I'll add more here if I make them. If you've made a theme you'd like to share, <a href="https://github.com/wrestle-R/T3code-Themes/pulls">open a pull request</a> with the theme JSON and any assets it needs.</p>
     </section>
   </main>
 

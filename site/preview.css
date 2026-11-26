@@ -53,7 +53,13 @@ body {
   background: var(--message);
   color: var(--message-ink);
 }
-.reply { margin-top: 13px; padding: 4px 0; }
+.reply {
+  width: fit-content;
+  margin-top: 13px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: var(--canvas);
+}
 .reply code {
   display: inline-block;
   margin-top: 7px;

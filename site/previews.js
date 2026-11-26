@@ -91,11 +91,19 @@ async function loadPreview(preview) {
     updatePreviewMode();
     modeControl.addEventListener('change', updatePreviewMode);
     doc.head.append(css);
-    if (theme === 'koi-pond' && 'IntersectionObserver' in window) {
-      doc.documentElement.setAttribute('data-paused', '');
-      new IntersectionObserver(([entry]) => {
-        doc.documentElement.toggleAttribute('data-paused', !entry.isIntersecting);
-      }).observe(preview);
+    if (theme === 'koi-pond') {
+      let visible = !('IntersectionObserver' in window);
+      const updatePlayback = () => {
+        doc.documentElement.toggleAttribute('data-paused', !visible || document.hidden);
+      };
+      updatePlayback();
+      document.addEventListener('visibilitychange', updatePlayback);
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([entry]) => {
+          visible = entry.isIntersecting;
+          updatePlayback();
+        }).observe(preview);
+      }
     }
     status.hidden = true;
     modeControl.hidden = false;
@@ -108,3 +116,19 @@ async function loadPreview(preview) {
 }
 
 document.querySelectorAll('.preview').forEach(loadPreview);
+
+const copyButton = document.querySelector('.copy-command');
+if (navigator.clipboard?.writeText) {
+  const command = document.querySelector('#install-command');
+  const copyStatus = document.querySelector('.copy-status');
+  copyButton.hidden = false;
+  copyButton.addEventListener('click', async () => {
+    copyStatus.textContent = '';
+    try {
+      await navigator.clipboard.writeText(command.textContent);
+      copyStatus.textContent = 'Command copied.';
+    } catch {
+      copyStatus.textContent = 'Select the command to copy it manually.';
+    }
+  });
+}
