@@ -4,7 +4,7 @@ const darkPreference = matchMedia('(prefers-color-scheme: dark)');
 
 function applySiteMode(mode) {
   document.documentElement.dataset.appearance = mode;
-  document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#191918' : '#f8f6f1';
+  document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#141414' : '#fafafa';
   siteMode.setAttribute('aria-pressed', String(mode === 'dark'));
 }
 
@@ -62,6 +62,11 @@ function colorDeclarations(colors) {
 }
 
 async function loadPreview(preview) {
+  preview.previewCleanup?.();
+  const controller = new AbortController();
+  let observer;
+  preview.previewCleanup = () => { controller.abort(); observer?.disconnect(); };
+  const { signal } = controller;
   const { theme } = preview.dataset;
   const iframe = preview.querySelector('iframe');
   const status = preview.querySelector('.preview-status');
@@ -89,7 +94,7 @@ async function loadPreview(preview) {
       doc.documentElement.classList.toggle('dark', modeControl.querySelector(':checked').value === 'dark');
     }
     updatePreviewMode();
-    modeControl.addEventListener('change', updatePreviewMode);
+    modeControl.addEventListener('change', updatePreviewMode, { signal });
     doc.head.append(css);
     if (theme === 'koi-pond') {
       let visible = !('IntersectionObserver' in window);
@@ -97,12 +102,13 @@ async function loadPreview(preview) {
         doc.documentElement.toggleAttribute('data-paused', !visible || document.hidden);
       };
       updatePlayback();
-      document.addEventListener('visibilitychange', updatePlayback);
+      document.addEventListener('visibilitychange', updatePlayback, { signal });
       if ('IntersectionObserver' in window) {
-        new IntersectionObserver(([entry]) => {
+        observer = new IntersectionObserver(([entry]) => {
           visible = entry.isIntersecting;
           updatePlayback();
-        }).observe(preview);
+        });
+        observer.observe(preview);
       }
     }
     status.hidden = true;
@@ -132,3 +138,39 @@ if (navigator.clipboard?.writeText) {
     }
   });
 }
+
+document.querySelectorAll('.preview-viewport').forEach(viewport => {
+  new ResizeObserver(() => {
+    viewport.querySelector('iframe').style.transform = `scale(${viewport.clientWidth / 960})`;
+  }).observe(viewport);
+});
+
+const themeDialog = document.querySelector('.theme-dialog');
+let openedTheme;
+let themePlaceholder;
+document.querySelectorAll('.open-theme').forEach(button => {
+  button.hidden = false;
+  button.addEventListener('click', () => {
+    openedTheme = button.closest('.theme');
+    themePlaceholder = document.createComment('theme position');
+    openedTheme.before(themePlaceholder);
+    themeDialog.querySelector('.dialog-content').append(openedTheme);
+    loadPreview(openedTheme.querySelector('.preview'));
+    themeDialog.showModal();
+  });
+});
+function closeTheme() {
+  themeDialog.close();
+}
+document.querySelector('.close-dialog').addEventListener('click', closeTheme);
+themeDialog.addEventListener('close', () => {
+  if (!openedTheme) return;
+  themePlaceholder.replaceWith(openedTheme);
+  loadPreview(openedTheme.querySelector('.preview'));
+  openedTheme.querySelector('.open-theme').focus();
+  openedTheme = null;
+});
+themeDialog.addEventListener('click', event => {
+  if (event.target === themeDialog) closeTheme();
+  if (event.target.closest('a[href^="#"]')) closeTheme();
+});
