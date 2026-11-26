@@ -4,7 +4,7 @@ const darkPreference = matchMedia('(prefers-color-scheme: dark)');
 
 function applySiteMode(mode) {
   document.documentElement.dataset.appearance = mode;
-  document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#151713' : '#f3f4ee';
+  document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#191918' : '#f8f6f1';
   siteMode.setAttribute('aria-pressed', String(mode === 'dark'));
 }
 
