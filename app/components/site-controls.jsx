@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AppearanceControl } from './ui';
 
 const modeKey = 't3-themes-site-mode';
 
 function SiteAppearance() {
-  const [dark, setDark] = useState(null);
+  const [appearance, setAppearance] = useState(null);
 
   useEffect(() => {
     const preference = window.matchMedia('(prefers-color-scheme: dark)');
@@ -19,7 +19,7 @@ function SiteAppearance() {
       } catch {
         // The toggle also works when storage is unavailable.
       }
-      setDark(saved === 'dark' || (saved !== 'light' && preference.matches));
+      setAppearance(saved === 'dark' || (saved !== 'light' && preference.matches) ? 'dark' : 'light');
     };
     followPreference();
     preference.addEventListener('change', followPreference);
@@ -27,34 +27,31 @@ function SiteAppearance() {
   }, []);
 
   useEffect(() => {
-    if (dark != null) document.documentElement.dataset.appearance = dark ? 'dark' : 'light';
-  }, [dark]);
+    if (appearance) document.documentElement.dataset.appearance = appearance;
+  }, [appearance]);
 
-  function toggleAppearance() {
-    const next = !dark;
-    setDark(next);
+  function changeAppearance(next) {
+    setAppearance(next);
     try {
-      window.localStorage.setItem(modeKey, next ? 'dark' : 'light');
+      window.localStorage.setItem(modeKey, next);
     } catch {
       // The current page still uses the selected appearance.
     }
   }
 
-  return (
-    <button className="site-mode" type="button" aria-label="Dark site appearance" aria-pressed={dark ?? false} onClick={toggleAppearance}>
-      {dark ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
-    </button>
-  );
+  return <AppearanceControl label="Site appearance" appearance={appearance} onChange={changeAppearance} compact />;
 }
 
 export function SiteNavigation() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main navigation">
-      <Link href="/#themes" aria-current={pathname === '/' ? 'location' : undefined}>Collection</Link>
-      <Link href="/koi-pond" aria-current={pathname === '/koi-pond' ? 'page' : undefined}>Koi pond</Link>
-      <Link href="/dark-texture" aria-current={pathname === '/dark-texture' ? 'page' : undefined}>Dark texture</Link>
+    <div className="site-tools">
+      <nav aria-label="Main navigation">
+        <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>Collection</Link>
+        <Link href="/koi-pond" aria-current={pathname === '/koi-pond' ? 'page' : undefined}>Koi pond</Link>
+        <Link href="/dark-texture" aria-current={pathname === '/dark-texture' ? 'page' : undefined}>Dark texture</Link>
+      </nav>
       <SiteAppearance />
-    </nav>
+    </div>
   );
 }

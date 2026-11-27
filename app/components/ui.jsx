@@ -2,8 +2,32 @@
 
 import * as Slider from '@radix-ui/react-slider';
 import * as Switch from '@radix-ui/react-switch';
-import { Download } from 'lucide-react';
+import { Download, Moon, Sun } from 'lucide-react';
 import { useId } from 'react';
+
+const appearances = [{ value: 'light', label: 'Light', Icon: Sun }, { value: 'dark', label: 'Dark', Icon: Moon }];
+
+export function AppearanceControl({ label, appearance, onChange, disabled, compact = false }) {
+  const id = useId();
+  return (
+    <fieldset className={compact ? 'mode-control mode-compact' : 'mode-control'} disabled={disabled}>
+      <legend className="sr-only">{label}</legend>
+      {appearances.map(({ value, label: mode, Icon }) => (
+        <label key={value} title={compact ? mode + ' site appearance' : undefined}>
+          <input
+            type="radio"
+            name={id}
+            value={value}
+            aria-label={compact ? mode + ' site appearance' : undefined}
+            checked={appearance === value}
+            onChange={() => onChange(value)}
+          />
+          <span><Icon size={15} aria-hidden="true" />{!compact && mode}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 export function DownloadAction({ href, disabled }) {
   const content = <><Download size={16} aria-hidden="true" /> Download JSON</>;

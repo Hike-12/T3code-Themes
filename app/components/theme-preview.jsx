@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { PanelsTopLeft } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp, GitBranch, Paperclip } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { themes } from '../themes';
+import { AppearanceControl } from './ui';
 
 const colorTokens = {
   canvas: 'canvas',
@@ -84,17 +85,16 @@ function PreviewConversation({ parent, agents }) {
     <div className="demo" data-workspace-area="conversation">
       <div className="chat-canvas" data-assistant-citation-viewport="">
         <div className="new-thread">
-          <h1>What should we build?</h1>
-          <p className="workspace-hint">Theme workshop</p>
+          <h1>New thread</h1>
           <div className="composer" data-chat-composer-main-surface="">
-            <span>Ask anything. @ files, $ skills, / commands</span>
+            <span>Ask anything…</span>
             <div className="composer-tools" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m9 15 7-7a2 2 0 0 1 3 3l-9 9a5 5 0 0 1-7-7L13 3a3.5 3.5 0 0 1 5 5L8 18" /></svg>
+              <Paperclip size={14} />
               <span data-chat-provider-model-picker="" aria-label={models[parent]}>{models[parent]}</span>
-              <svg className="submit" viewBox="0 0 24 24"><path d="M12 18V6m-5 5 5-5 5 5" /></svg>
+              <span className="submit"><ArrowUp size={14} /></span>
             </div>
           </div>
-          <div className="checkout"><span>Current checkout</span><span>⑂ main</span></div>
+          <div className="checkout"><GitBranch size={12} aria-hidden="true" /> main</div>
         </div>
         {agents.length > 0 && <School agents={agents} />}
       </div>
@@ -108,7 +108,6 @@ export function ThemePreview({ slug, config, error, studio = false, parent = 'Op
   const [frame, setFrame] = useState(null);
   const preview = useRef(null);
   const iframe = useRef(null);
-  const modeId = useId();
   const ready = Boolean(config && frame);
 
   function attachLoadedFrame() {
@@ -145,16 +144,8 @@ export function ThemePreview({ slug, config, error, studio = false, parent = 'Op
   return (
     <div className="preview" data-theme={slug} data-preview-appearance={appearance} aria-busy={!ready && !error} ref={preview}>
       <div className="preview-toolbar">
-        <span className="window-title"><PanelsTopLeft size={15} aria-hidden="true" /> Live preview</span>
-        <fieldset className="mode-control" disabled={!ready}>
-          <legend className="sr-only">{theme.name} preview appearance</legend>
-          {['dark', 'light'].map(mode => (
-            <label key={mode}>
-              <input type="radio" name={modeId} value={mode} checked={mode === appearance} onChange={() => setAppearance(mode)} />
-              <span>{mode === 'dark' ? 'Dark' : 'Light'}</span>
-            </label>
-          ))}
-        </fieldset>
+        <span className="window-title">Live preview</span>
+        <AppearanceControl label={theme.name + ' preview appearance'} appearance={appearance} onChange={setAppearance} disabled={!ready} />
       </div>
       <div className={studio ? 'preview-viewport studio-viewport' : 'preview-viewport'}>
         <iframe

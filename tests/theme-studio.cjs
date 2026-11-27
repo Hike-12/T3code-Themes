@@ -102,7 +102,7 @@ async function testStudio(browser) {
   assert.deepEqual((await readPond(frame)).map(fish => fish.motion), [
     't3-koi-openai', 't3-koi-claude', 't3-koi-gemini', 't3-koi-openai',
   ]);
-  await page.getByRole('radio', { name: 'Light' }).check();
+  await page.getByRole('radio', { name: 'Light', exact: true }).check();
   assert.deepEqual((await readPond(frame)).slice(0, 3).map(fish => fish.color), [
     '#e8eae1', '#ffab62', '#a9d7ff',
   ]);
@@ -207,7 +207,7 @@ async function testStudio(browser) {
   await page.getByRole('navigation').getByRole('link', { name: 'Collection' }).click();
   await page.getByRole('link', { name: 'Customize texture' }).click();
   await page.waitForURL('**/dark-texture');
-  await page.getByRole('radio', { name: 'Light' }).check();
+  await page.getByRole('radio', { name: 'Light', exact: true }).check();
   const texturePond = frame.locator('.demo');
   const grain = page.getByRole('slider', { name: 'Grain strength' });
   await texturePond.evaluate(async pond => {
@@ -226,7 +226,7 @@ async function testStudio(browser) {
   assert.equal(await texturePond.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(218, 223, 232)');
   await setSlider(grain, 29);
   assert.equal(await texturePond.evaluate(el => getComputedStyle(el, '::before').opacity), '0.29');
-  await page.getByRole('radio', { name: 'Dark' }).check();
+  await page.getByRole('radio', { name: 'Dark', exact: true }).check();
   assert.equal(await texturePond.evaluate(el => getComputedStyle(el, '::before').opacity), '0.29');
   assert.ok(await grainContrast(page, texturePond) > 0);
   const texture = await exportedTheme(page);

@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowDown, ArrowUpRight } from 'lucide-react';
+import { ArrowDown, SlidersHorizontal } from 'lucide-react';
 import { GalleryPreview } from './components/theme-preview';
 import { DownloadAction } from './components/ui';
 import { themes } from './themes';
@@ -8,34 +8,29 @@ import { themes } from './themes';
 export default function Collection() {
   return (
     <main id="main">
-      <section className="collection-hero wrap" aria-labelledby="page-title">
-        <div className="hero-copy">
-          <h1 id="page-title">Themes for <em>T3 Code</em></h1>
-          <p>I’ve been using T3 Code a lot lately, so I made a couple of themes for it. One has koi that swim while you work. The other is a simple grain texture.</p>
-          <div className="hero-actions">
-            <a className="download" href="#themes">Explore themes <ArrowDown size={16} aria-hidden="true" /></a>
-            <a className="text-link" href="#install">How to install</a>
-          </div>
-        </div>
-        <div className="hero-art">
-          <Image src="/assets/koi-cover.webp" alt="Two red and white koi in dark blue water" fill preload sizes="(max-width: 1240px) 100vw, 1240px" />
-        </div>
-      </section>
-
       <section id="themes" className="gallery wrap" aria-labelledby="gallery-title">
-        <div className="collection-bar">
-          <h2 id="gallery-title">Collection</h2>
-        </div>
+        <header className="collection-bar">
+          <div>
+            <h1 id="gallery-title">Theme collection</h1>
+            <p>Themes I made for my T3 Code setup.</p>
+          </div>
+          <a className="text-link" href="#install">How to install <ArrowDown size={15} aria-hidden="true" /></a>
+        </header>
         <div className="theme-grid">
           {Object.entries(themes).map(([slug, theme]) => (
             <article className="theme" aria-labelledby={slug + '-title'} key={slug}>
               <div className="theme-info">
                 <header>
-                  <h3 id={slug + '-title'}>{theme.name}</h3>
+                  <h2 id={slug + '-title'}>{theme.name}</h2>
                   <p>{theme.description}</p>
                 </header>
+                {slug === 'koi-pond' && (
+                  <div className="theme-art">
+                    <Image src="/assets/koi-cover.webp" alt="Koi swimming through rippled water" fill sizes="(max-width: 700px) 90vw, 340px" preload />
+                  </div>
+                )}
                 <div className="theme-actions">
-                  <Link className="open-theme" href={'/' + slug}>{theme.action} <ArrowUpRight size={15} aria-hidden="true" /></Link>
+                  <Link className="open-theme" href={'/' + slug}><SlidersHorizontal size={15} aria-hidden="true" /> {theme.action}</Link>
                   <DownloadAction href={theme.download} />
                 </div>
               </div>
