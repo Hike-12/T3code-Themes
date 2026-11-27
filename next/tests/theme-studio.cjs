@@ -360,7 +360,7 @@ async function testBlockworks(browser) {
   assert.equal(new Set(Object.values(sprites)).size, 4);
   assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal((await look()).anchor, 'absolute');
-  assert.equal((await look()).width, '24px');
+  assert.equal((await look()).width, '64px');
   assert.equal((await look()).sizing, '300% 100%');
   assert.match((await look()).sprite, /^url\("data:image\/png;base64,/);
   assert.equal((await look()).pointerEvents, 'none');

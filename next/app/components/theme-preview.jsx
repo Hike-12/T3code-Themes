@@ -119,7 +119,9 @@ function PreviewConversation({ slug, parent, agents, conversation, activity, mob
             </div>
           </div>
           <div className="checkout">
-            <GitBranch size={12} aria-hidden="true" /> {isMinecraft ? 'workbench' : 'main'}
+            {isMinecraft
+              ? <span className="preview-branch"><GitBranch size={12} aria-hidden="true" /> workbench</span>
+              : <><GitBranch size={12} aria-hidden="true" /> main</>}
             {isMinecraft && <><span data-mc-preview-status="" role={onMobChange ? 'status' : undefined}>{status[activity]}</span>
               {conversation && <span className="diff-counts" aria-label="84 additions, 16 deletions">
                 <span className="text-diff-addition-foreground">+84</span>

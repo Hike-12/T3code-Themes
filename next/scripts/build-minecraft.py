@@ -3,7 +3,7 @@ from base64 import b64encode
 from io import BytesIO
 from pathlib import Path
 import json
-from PIL import Image, ImageColor, ImageDraw
+from PIL import Image, ImageChops, ImageColor, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = Path(__file__).with_name('assets') / 'minecraft'
@@ -69,12 +69,40 @@ def mini_mob(key):
             draw.line((13, 8, 15, 9), fill='#6acfe8')
         for x in (5, 9):
             draw.rectangle((x, eye_y - (stage == 2), x + 1, eye_y), fill=eyes)
-        sheet.paste(frame, (stage * 16, 0))
+        # Offset the silhouette by one source pixel to shade the right and bottom faces.
+        mask = frame.getchannel('A')
+        depth = Image.new('L', frame.size)
+        depth.paste(mask, (1, 1))
+        voxel = Image.new('RGBA', frame.size, '#0e1013')
+        voxel.putalpha(ImageChops.subtract(depth, mask))
+        voxel.alpha_composite(frame)
+        sheet.paste(voxel, (stage * 16, 0))
     return sheet
 
 
 mobs = ('openai', 'claude', 'gemini', 'opencode', 'creeper', 'fox')
 assets = {mob: sprite_url(mini_mob(mob)) for mob in mobs}
+
+stone = Image.new('RGB', (16, 16), '#121417')
+draw = ImageDraw.Draw(stone)
+# Stepped seams wrap across the tile edges. Short broken highlights suggest stone strata.
+draw.line([(0, 3), (4, 3), (4, 4), (9, 4), (9, 2), (13, 2), (13, 3), (15, 3)], fill='#0e1013')
+draw.line([(0, 11), (3, 11), (3, 9), (8, 9), (8, 10), (12, 10), (12, 11), (15, 11)], fill='#0e1013')
+for box in [(0, 5, 3, 7), (5, 5, 8, 6), (10, 3, 12, 6), (13, 5, 15, 7),
+            (0, 12, 3, 13), (4, 10, 7, 13), (9, 11, 11, 13), (13, 12, 15, 13), (6, 0, 10, 1)]:
+    draw.rectangle(box, fill='#171a1f')
+for x, y, length in [(1, 5, 2), (5, 5, 2), (10, 3, 2), (14, 6, 1), (0, 13, 1), (5, 10, 2), (10, 12, 1), (14, 12, 1), (7, 0, 2)]:
+    draw.line((x, y, x + length, y), fill='#1d2026')
+assets['deepslate'] = sprite_url(stone)
+
+glints = Image.new('RGBA', (24, 18))
+draw = ImageDraw.Draw(glints)
+draw.point((1, 11), fill='#55a44a')
+draw.point((6, 3), fill='#80ff20')
+draw.line((20, 3, 22, 3), fill='#89e7ff')
+draw.line((21, 2, 21, 4), fill='#89e7ff')
+draw.point((22, 12), fill='#80ff20')
+assets['glints'] = sprite_url(glints)
 
 # Each icon occupies a 16px box and replaces only the existing control glyph.
 icons = {
@@ -113,9 +141,9 @@ dark = {
     'sidebar': '#191b20', 'sidebarForeground': '#e8eaee', 'sidebarMutedForeground': '#a4aab6',
     'sidebarRowActive': '#252830', 'sidebarRowSelected': '#252830', 'sidebarRowHover': '#202229',
     'sidebarBorder': '#252830', 'sidebarControlSurface': '#202229',
-    'surface': '#191b20', 'surfaceRaised': '#191b20', 'surfaceOverlay': '#202229',
-    'messageSurface': '#26211c', 'messageForeground': '#eee9e1',
-    'border': '#252830', 'input': '#191b20', 'focus': '#38bdf8',
+    'surface': '#191c22', 'surfaceRaised': '#14161a', 'surfaceOverlay': '#191c22',
+    'messageSurface': '#191c22', 'messageForeground': '#eee9e1',
+    'border': '#252830', 'input': '#14161a', 'focus': '#38bdf8',
     'accent': '#38bdf8', 'accentForeground': '#10191f', 'accentSurface': '#1c2a32',
     'secondary': '#202229', 'secondaryForeground': '#e8eaee', 'muted': '#252830',
     'mutedForeground': '#a4aab6', 'secondaryLabel': '#a4aab6', 'placeholder': '#a4aab6',

@@ -13,7 +13,7 @@ async function run(browser) {
   await page.setContent(`<!doctype html><html class="dark"><style>
     body { margin: 16px; }
     [data-chat-canvas] { max-width: 440px; }
-    [data-chat-composer-main-surface] { margin-top: 32px; min-height: 64px; }
+    [data-chat-composer-main-surface] { min-height: 64px; }
     ${theme.css}
     </style><aside data-slot="sidebar">
       <button data-sidebar-row="shelf:working">Working</button>
@@ -24,7 +24,7 @@ async function run(browser) {
       <header data-chat-header><button aria-label="Open in VS Code"><svg><path /></svg></button>
         <button aria-label="Add project script"><svg><path /></svg></button></header>
       <div data-workspace-area="conversation"><div data-timeline-row-kind="work"></div></div>
-      <div data-workspace-area="composer"><form data-chat-composer-form>
+      <div data-workspace-area="composer"><button type="button">Details</button><form data-chat-composer-form>
         <div data-chat-composer-main-surface><label>Ask anything <input></label>
           <button type="button" aria-label="Attach files"><svg><path /></svg></button>
           <button type="button" id="stop" hidden aria-label="Stop generation"><svg></svg></button>
@@ -38,7 +38,8 @@ async function run(browser) {
     const sprite = getComputedStyle(el, '::after');
     return { size: sprite.width, dockRadius: getComputedStyle(el).borderRadius, pose: sprite.backgroundPositionX,
       image: sprite.backgroundImage, motion: sprite.animationName, bottom: sprite.bottom,
-      badge: getComputedStyle(el, '::before').content, pointerEvents: sprite.pointerEvents };
+      badge: getComputedStyle(el, '::before').content, particles: getComputedStyle(el, '::before').backgroundImage,
+      pointerEvents: sprite.pointerEvents };
   });
 
   // Match a real composer which inserts and removes the Stop action.
@@ -48,15 +49,23 @@ async function run(browser) {
     el.remove();
     return markup;
   });
-  assert.equal((await buddy()).size, '24px');
+  assert.equal((await buddy()).size, '64px');
+  assert.equal((await buddy()).particles, 'none');
   assert.equal((await buddy()).dockRadius, '2px');
   assert.equal((await buddy()).motion, 'minecraft-idle');
   assert.equal((await buddy()).pointerEvents, 'none');
-  assert.equal(await dock.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(25, 27, 32)');
+  assert.equal(await dock.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(20, 22, 26)');
+  assert.equal(await dock.evaluate(el => getComputedStyle(el).borderTopWidth), '2px');
   assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundImage ===
     getComputedStyle(document.documentElement).getPropertyValue('--mc-claude').trim()), true);
-  assert.equal(await page.locator('[data-workspace-area="conversation"]').evaluate(el =>
-    getComputedStyle(el).backgroundImage), 'none');
+  for (const surface of ['[data-workspace-area="conversation"]', '[data-slot="sidebar"]']) {
+    const tile = await page.locator(surface).evaluate(el => {
+      const style = getComputedStyle(el);
+      return { image: style.backgroundImage, size: style.backgroundSize };
+    });
+    assert.match(tile.image, /data:image\/png;base64/);
+    assert.equal(tile.size, '64px 64px');
+  }
   assert.equal(await page.getByRole('button', { name: 'Working', exact: true }).evaluate(el =>
     getComputedStyle(el).fontFamily.includes('Minecraft UI')), true);
   assert.equal(await page.evaluate(async () => {
@@ -71,6 +80,7 @@ async function run(browser) {
   await dock.evaluate((el, markup) => el.insertAdjacentHTML('beforeend', markup), stopMarkup);
   assert.equal((await buddy()).pose, '100%');
   assert.equal((await buddy()).motion, 'minecraft-working');
+  assert.match((await buddy()).particles, /data:image\/png;base64/);
   assert.equal((await buddy()).badge, '"◆"');
   assert.equal(await page.locator('#stop').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(217, 43, 43)');
   const row = page.locator('[data-timeline-row-kind]');
@@ -105,6 +115,10 @@ async function run(browser) {
     await page.setViewportSize({ width, height: 600 });
     assert.ok(await page.locator('#diff').isVisible());
     await page.locator('#diff').click({ trial: true });
+    await page.getByRole('button', { name: 'Details' }).click({ trial: true });
+    const details = await page.getByRole('button', { name: 'Details' }).boundingBox();
+    const composer = await dock.boundingBox();
+    assert.ok(composer.y - 64 >= details.y + details.height, 'The buddy clears Details');
     assert.ok(await page.getByRole('textbox', { name: 'Ask anything' }).isVisible());
   }
   await page.close();

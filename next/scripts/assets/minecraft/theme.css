@@ -1,10 +1,10 @@
 /* This theme uses T3 Code's own controls and lifecycle indicators. */
 :root.dark {
-  --mc-slot: #191b20;
+  --mc-slot: #14161a;
   --mc-slot-dark: #0b0c0e;
-  --mc-slot-light: #2c3038;
+  --mc-slot-light: #2b303a;
   --mc-oak-edge: #3a3129;
-  --mc-xp: #4ade80;
+  --mc-xp: #80ff20;
   --mc-amber: #f4c36e;
   --mc-error: #ff8585;
   --diff-addition-foreground: #69d6a1;
@@ -21,21 +21,39 @@
   --diff-addition-foreground: #137442;
   --diff-deletion-foreground: #a12525;
 }
+:root.dark :is([data-chat-canvas], [data-workspace-area="conversation"],
+    [data-slot="sidebar"], [data-slot="sidebar-inner"]) {
+  background-color: #121417;
+  background-image: var(--mc-deepslate);
+  background-size: 64px 64px;
+  image-rendering: pixelated;
+}
+:root.dark :is([data-chat-canvas], [data-slot="sidebar"], [data-slot="sidebar-inner"]) :is(img, video, canvas) {
+  image-rendering: auto;
+}
 :is([data-slot="sidebar"], [data-slot="composer-host"], [data-thread-details-card],
     [data-slot="dialog-popup"], [data-slot="alert-dialog-popup"], [data-slot="sheet-popup"],
     [data-slot="popover-popup"], [data-slot="menu-popup"], [data-diffs-header],
     [data-chat-composer-top-drawer], [data-composer-command-drawer], [data-composer-stash-drawer],
-    [data-user-message-bubble], .chat-markdown-codeblock, [data-chat-composer-main-surface]) {
+    [data-user-message-bubble], .chat-markdown-codeblock, [data-chat-composer-main-surface],
+    [data-slot="input"], [data-slot="button"], [data-slot="select-trigger"],
+    [data-chat-composer-form] :is(input, textarea, button), [data-chat-header] button, [data-slot="sidebar"] button) {
   border-radius: 2px;
 }
 :is([data-chat-composer-main-surface], [data-chat-composer-top-drawer], [data-composer-command-drawer],
     [data-composer-stash-drawer], .chat-markdown-codeblock) {
   background-color: var(--mc-slot);
-  border: 1px solid;
-  border-color: var(--mc-slot-dark) var(--mc-slot-light) var(--mc-slot-light) var(--mc-slot-dark);
+  border: 2px solid;
+  border-color: var(--mc-slot-light) var(--mc-slot-dark) var(--mc-slot-dark) var(--mc-slot-light);
 }
 [data-chat-composer-main-surface]:focus-within { border-color: var(--ring, var(--accent)); }
 [data-user-message-bubble] { border: 1px solid var(--mc-oak-edge); }
+:root.dark :is([data-user-message-bubble], [data-thread-details-card]) {
+  background-color: #191c22;
+  border: 2px solid;
+  border-color: var(--mc-slot-light) var(--mc-slot-dark) var(--mc-slot-dark) var(--mc-slot-light);
+}
+:root.dark [data-user-message-bubble] { border-inline-start-color: var(--mc-oak-edge); }
 [data-chat-composer-form] button:is([aria-label="Stop generation"], [aria-label="Stopping"]),
 [data-mc-activity="Coding"] [data-chat-composer-compact-send],
 [data-mc-activity="Reasoning"] [data-chat-composer-compact-send] {
@@ -52,13 +70,18 @@
   font-size: 10px;
 }
 [data-chat-canvas]:has(button[aria-label="Stop generation"]) [data-thread-now-line] > span:first-child,
+[data-chat-canvas]:has(button[aria-label="Stop generation"]) [data-thread-now-line] .tabular-nums,
 [data-chat-canvas]:has(button[aria-label="Stop generation"]) [data-chat-thread-status-line] > svg,
 [data-thread-item] :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"]) {
   color: var(--mc-xp);
 }
 [data-thread-item] :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"]) { background-color: var(--mc-xp); }
 [data-chat-canvas]:has(button[aria-label="Stop generation"]) button:has(> svg.lucide-git-branch),
-[data-mc-activity="Coding"] .checkout { color: var(--accent); }
+[data-mc-activity="Coding"] .checkout .preview-branch {
+  color: var(--mc-xp);
+  background-color: color-mix(in srgb, var(--mc-xp) 9%, var(--mc-slot));
+  border-radius: 2px;
+}
 :is(.text-diff-addition, .text-diff-addition-foreground) { color: var(--diff-addition-foreground); }
 :is(.text-diff-deletion, .text-diff-deletion-foreground) { color: var(--diff-deletion-foreground); }
 
@@ -93,11 +116,15 @@
 
 /* One companion per main composer. State is read from the current thread's own UI. */
 [data-chat-canvas] {
+  --mc-buddy-size: 64px;
+  --mc-buddy-inset: 22px;
   --mc-model-mob: var(--mc-openai);
   --mc-pose: 0%;
   --mc-move: minecraft-idle 4s steps(1, end) infinite;
   --mc-indicator: var(--mc-elsewhere, none);
   --mc-indicator-ink: var(--accent, #38bdf8);
+  --mc-sparks: none;
+  --mc-sparks-motion: none;
 }
 [data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *)[aria-label*="claude" i], [data-chat-provider-model-picker]:not([data-side-chat-pane] *) [data-provider-kind="claude"]) {
   --mc-model-mob: var(--mc-claude);
@@ -118,6 +145,8 @@
   --mc-move: minecraft-working .85s steps(1, end) infinite;
   --mc-indicator: "◆";
   --mc-indicator-ink: var(--mc-xp);
+  --mc-sparks: var(--mc-glints);
+  --mc-sparks-motion: minecraft-glints 1.8s steps(2, end) infinite;
 }
 [data-chat-canvas]:where([data-mc-activity="Reasoning"],
   :has([data-workspace-area="composer"]:not([data-side-chat-pane] *) button[aria-label="Stop generation"]):has(
@@ -126,6 +155,8 @@
   --mc-move: minecraft-idle 2.2s steps(1, end) infinite;
   --mc-indicator: "◆";
   --mc-indicator-ink: var(--mc-xp);
+  --mc-sparks: var(--mc-glints);
+  --mc-sparks-motion: minecraft-glints 1.8s steps(2, end) infinite;
 }
 [data-chat-canvas]:where([data-mc-activity="Error"],
   :has([data-timeline-row-kind]:last-child [data-v2-item-type="error"]:not([data-side-chat-pane] *)),
@@ -134,22 +165,30 @@
   --mc-move: minecraft-hurt .38s steps(1, end) 2;
   --mc-indicator: "×";
   --mc-indicator-ink: var(--mc-error);
+  --mc-sparks: none;
+  --mc-sparks-motion: none;
 }
 [data-chat-canvas]:where([data-mc-activity="Approval"], :has([data-chat-composer-top-drawer]:not([data-side-chat-pane] *))) {
   --mc-pose: 50%;
   --mc-move: none;
   --mc-indicator: "!";
   --mc-indicator-ink: var(--mc-amber);
+  --mc-sparks: none;
+  --mc-sparks-motion: none;
 }
 [data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *) { position: relative; }
+/* Reserve the perch within the measured form, below the native status actions. */
+[data-chat-canvas] :is([data-chat-composer-form], [data-chat-composer-form] *):not([data-side-chat-pane] *):has(> [data-chat-composer-main-surface]) {
+  padding-block-start: var(--mc-buddy-size);
+}
 [data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *)::after {
   content: "";
   display: block;
   position: absolute;
-  inset: auto 24px calc(100% - 2px) auto;
+  inset: auto var(--mc-buddy-inset) calc(100% - 6px) auto;
   z-index: 3;
-  width: 24px;
-  height: 24px;
+  width: var(--mc-buddy-size);
+  height: var(--mc-buddy-size);
   border: 0;
   pointer-events: none;
   image-rendering: pixelated;
@@ -160,15 +199,18 @@
 [data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *)::before {
   content: var(--mc-indicator);
   display: grid;
-  place-items: center;
+  place-items: center end;
   position: absolute;
-  inset: auto 11px calc(100% + 9px) auto;
+  inset: auto 8px calc(100% - 6px) auto;
   z-index: 3;
-  width: 10px;
-  height: 11px;
+  width: 96px;
+  height: 72px;
   pointer-events: none;
   border: 0;
-  background: none;
+  background: var(--mc-sparks) center / contain no-repeat;
+  image-rendering: pixelated;
+  animation: var(--mc-sparks-motion);
+  animation-play-state: var(--theme-motion-state, running);
   color: var(--mc-indicator-ink);
   font: 10px/1 ui-monospace, monospace;
 }
@@ -179,7 +221,9 @@
   97% { background-position-x: var(--mc-pose); }
 }
 @keyframes minecraft-working { 50% { translate: 1px 0; } }
+@keyframes minecraft-glints { 50% { background-position-y: -4px; } }
 @keyframes minecraft-hurt { 0% { filter: sepia(1) saturate(9) hue-rotate(318deg); } 55% { filter: none; } }
 @media (prefers-reduced-motion: reduce) {
+  [data-chat-canvas] [data-chat-composer-main-surface]::before,
   [data-chat-canvas] [data-chat-composer-main-surface]::after { animation: none !important; }
 }
