@@ -164,8 +164,8 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
       </div>
       {ready && createPortal(
         <style>{`
-          :root { ${colorDeclarations(config.variants.light)} }
-          :root.dark { ${colorDeclarations({ canvas: config.canvas, ...config.colors })} }
+          :root { ${colorDeclarations({ canvas: config.canvas, accent: config.accent, ...config.colors, ...config.variants?.light })} }
+          :root.dark { ${colorDeclarations({ canvas: config.canvas, accent: config.accent, ...config.colors, ...config.variants?.dark })} }
           ${config.css}
         `}</style>,
         frame.head,
@@ -177,6 +177,6 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
 
 export function GalleryPreview({ slug }) {
   const { config, error } = useTheme(slug);
-  const [appearance, setAppearance] = useState('dark');
+  const [appearance, setAppearance] = useState(themes[slug].appearance || 'dark');
   return <ThemePreview slug={slug} config={config} error={error} appearance={appearance} onAppearanceChange={setAppearance} />;
 }

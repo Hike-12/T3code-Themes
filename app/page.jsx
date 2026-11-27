@@ -43,7 +43,7 @@ export default function Collection() {
       <section id="install" className="install wrap" aria-labelledby="install-title">
         <h2 id="install-title">Install a theme</h2>
         <ol className="install-steps">
-          <li><strong>Download</strong><span>Get the JSON for either theme, or customize it and download your version.</span></li>
+          <li><strong>Download</strong><span>Get the JSON for any theme, or customize it and download your version.</span></li>
           <li><strong>Import</strong><span>In T3 Code, go to <b>Settings → Appearance</b> and choose <b>Import a file</b>.</span></li>
           <li><strong>Apply</strong><span>Open your JSON and select the theme in the picker.</span></li>
         </ol>

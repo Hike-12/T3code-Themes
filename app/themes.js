@@ -16,6 +16,14 @@ export const themes = {
       'opencode-time': 54,
     },
   },
+  'margin-notes': {
+    name: 'Margin Notes',
+    description: 'Warm paper, a crimson margin rule, and a bookmark that appears while subagents work.',
+    studioDescription: 'A quiet notebook theme with warm light and dark appearances.',
+    action: 'View Margin Notes',
+    download: '/downloads/margin-notes.json',
+    appearance: 'light',
+  },
   'dark-texture': {
     name: 'Dark texture',
     description: 'A fine charcoal grain in dark mode and the same texture on a light gray background.',
