@@ -107,29 +107,33 @@ async function run(browser) {
   await page.setContent(`<!doctype html><html class="dark"><style>${theme.css}
     :root { --mc-picked-sprite: var(--mc-claude-sprite); }
     </style><div data-chat-canvas>
-      <div data-v2-item-type="reasoning">Thinking</div>
+      <div data-workspace-area="conversation"><div data-v2-item-type="reasoning">Thinking</div></div>
       <div data-workspace-area="composer">
-        <div data-chat-composer-main-surface><div data-chat-composer-footer></div></div>
+        <form data-chat-composer-form><div data-chat-composer-main-surface></div></form>
       </div>
     </div>`);
   const dock = page.locator('[data-chat-composer-main-surface]');
-  const footer = page.locator('[data-chat-composer-footer]');
-  const playback = () => footer.evaluate(el => getComputedStyle(el, '::before').animationName);
+  const playback = () => dock.evaluate(el => getComputedStyle(el, '::after').animationName);
   assert.equal(await dock.evaluate(el => getComputedStyle(el).borderRadius), '4px');
+  assert.equal(await page.locator('[data-workspace-area="conversation"]').evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal(await playback(), 'none');
-  assert.equal(await footer.evaluate(el => getComputedStyle(el, '::before').backgroundImage ===
+  assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundImage ===
     getComputedStyle(document.documentElement).getPropertyValue('--mc-claude').trim()), true);
-  assert.ok(parseFloat(await page.locator('[data-v2-item-type="reasoning"]').evaluate(el =>
-    getComputedStyle(el, '::before').backgroundPositionX)) > 50);
-  await footer.evaluate(el => {
+  await dock.evaluate(el => {
     const stop = document.createElement('button');
     stop.setAttribute('aria-label', 'Stop generation');
     el.append(stop);
   });
   assert.equal(await playback(), 't3-minecraft-feet');
+  const reasoning = page.locator('[data-v2-item-type="reasoning"]');
+  await reasoning.evaluate(el => { el.innerHTML = '<span class="live-tool-shine">Thinking</span>'; });
+  assert.equal(await playback(), 't3-minecraft-ponder');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(await playback(), 'none');
+  assert.ok(parseFloat(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundPositionX)) > 50);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await dock.getByRole('button', { name: 'Stop generation' }).evaluate(el => el.remove());
+  assert.equal(await playback(), 'none');
 
   await writeFile(path.join(output, 'routes.json'), JSON.stringify(results,null,2)+'\n');
   await page.close();

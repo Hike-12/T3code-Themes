@@ -101,13 +101,9 @@ function PreviewConversation({ slug, parent, agents, conversation, activity }) {
       <div className="preview-composer" data-workspace-area="composer">
         <div className="new-thread">
           {!conversation && <h1>{isMinecraft ? 'New build' : 'New thread'}</h1>}
-          {isMinecraft && activity !== 'Idle' && (
-            <div className="mob-status" role="status" data-thread-now-line={activity === 'Coding' || undefined}
-              data-v2-item-type={activity === 'Reasoning' ? 'reasoning' : undefined}>{activity}</div>
-          )}
-          <div className="composer" data-chat-composer-main-surface="">
-            <span>Ask anything…</span>
-            <div className="composer-tools" aria-hidden="true" data-chat-composer-footer={isMinecraft && activity === 'Idle' || undefined}>
+          <div className="composer" data-chat-composer-main-surface="" data-mc-activity={isMinecraft ? activity : undefined}>
+            {isMinecraft ? <div data-chat-composer-body="">Ask anything…</div> : <span>Ask anything…</span>}
+            <div className="composer-tools" aria-hidden="true">
               <Paperclip size={14} />
               <span data-chat-provider-model-picker="" aria-label={`${parent} ${models[parent]}`}>{models[parent]}</span>
               <span className="submit" data-chat-composer-compact-send=""><ArrowUp size={14} /></span>

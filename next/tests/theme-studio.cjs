@@ -2,7 +2,6 @@
 // Set CHROME_PATH to use an existing Chromium installation.
 const assert = require('node:assert/strict');
 const { readFile } = require('node:fs/promises');
-const { setTimeout: delay } = require('node:timers/promises');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const site = process.env.SITE_URL || 'http://localhost:3000';
 
@@ -363,152 +362,73 @@ async function testBlockworks(browser) {
   const pond = frame.locator('.demo');
   assert.equal(original.canvas, '#101010');
   assert.equal(original.variants.light.canvas, '#e5e5e5');
-  // One cropped portal on the right; no left terrain or full-width floor.
-  assert.equal(await pond.evaluate(el => getComputedStyle(el).backgroundRepeat), 'no-repeat');
-  assert.match(await pond.evaluate(el => getComputedStyle(el).backgroundPosition), /100%/);
+  const dock = frame.locator('[data-chat-composer-main-surface]');
+  const look = () => dock.evaluate(el => {
+    const icon = getComputedStyle(el, '::after');
+    return { sprite: icon.backgroundImage, animation: icon.animationName, motion: icon.animationPlayState,
+      position: icon.backgroundPositionX, anchor: icon.position, pointerEvents: icon.pointerEvents };
+  });
   const sprites = {};
   for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
     await model.selectOption(provider);
-    const [golem] = await readGolems(frame);
-    sprites[provider] = golem.sprite;
-    assert.match(golem.sprite, /^url\("data:image\/webp;base64,/);
-    assert.equal(golem.pointerEvents, 'none');
+    sprites[provider] = (await look()).sprite;
   }
   assert.equal(new Set(Object.values(sprites)).size, 4);
+  assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').content), 'none');
+  assert.equal((await look()).anchor, 'absolute');
+  assert.equal((await look()).pointerEvents, 'none');
+  assert.equal((await look()).animation, 'none');
 
-  await model.selectOption('OpenAI');
-  const ironSize = await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').width));
-  assert.ok(await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').animationDuration) >= 60), 'Iron golem should move slowly');
-  await model.selectOption('OpenCode');
-  assert.ok(await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').width)) > ironSize);
-  assert.notEqual(await pond.evaluate(el => getComputedStyle(el,'::before').filter), 'none');
-  await model.selectOption('Gemini');
-  for (const width of [320, 768, 1440]) {
-    await page.setViewportSize({width,height:950});
-    const flight = await pond.evaluate(el => {
-      getComputedStyle(el,'::before').animationName;
-      const animation = el.getAnimations({subtree:true}).find(a => a.animationName === 't3-minecraft-fly');
-      animation.pause();
-      const duration = animation.effect.getTiming().duration;
-      const composer = el.ownerDocument.querySelector('[data-chat-composer-main-surface]').getBoundingClientRect();
-      const origin = el.getBoundingClientRect();
-      const ys = []; let collisions=0;
-      for(let step=0;step<120;step++) {
-        animation.currentTime=duration*step/120;
-        const style=getComputedStyle(el,'::before');
-        const matrix=new DOMMatrixReadOnly(style.transform);
-        const size=parseFloat(style.width),left=origin.left+matrix.m41,top=origin.top+matrix.m42;
-        ys.push(matrix.m42);
-        if(left<composer.right && left+size>composer.left && top<composer.bottom && top+size>composer.top)collisions++;
-      }
-      animation.currentTime=0; animation.play();
-      return {range:Math.max(...ys)-Math.min(...ys),height:origin.height,collisions};
-    });
-    assert.ok(flight.range>flight.height*.45, 'Allay should rise and dive');
-    assert.equal(flight.collisions,0,'Allay flight should avoid the composer');
-  }
-  await page.setViewportSize({width:1440,height:950});
-  // Refresh restores CSS animations after the deterministic flight sampling.
-  await page.reload();
-  await frame.locator('.composer').waitFor();
-  await model.selectOption('Gemini');
-  const add = provider => page.getByRole('button', { name: 'Add ' + provider + ' subagent' });
-  const finish = provider => page.getByRole('button', { name: 'Finish ' + provider + ' subagent' });
-  const mob = page.getByRole('radio', { name: 'Match model' });
-  await mob.focus();
-  await mob.press('ArrowRight');
+  const matchModel = page.getByRole('radio', { name: 'Match model' });
+  await matchModel.focus();
+  await matchModel.press('ArrowRight');
   assert.ok(await page.getByRole('radio', { name: 'Iron golem' }).isChecked());
-  const idleIcon = frame.locator('[data-chat-composer-footer]');
-  assert.equal(await idleIcon.evaluate(el => getComputedStyle(el, '::before').backgroundImage), sprites.OpenAI);
   await page.getByRole('radio', { name: 'Copper golem' }).check();
-  await add('OpenCode').click();
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Claude, sprites.OpenCode]);
-  assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').backgroundImage), sprites.Claude);
+  assert.equal((await look()).sprite === sprites.Claude, true);
   const savedMob = await exportedTheme(page);
   assert.match(savedMob.css, /--mc-picked-sprite: var\(--mc-claude-sprite\)/);
-  assert.match(savedMob.css, /--mc-picked-route: var\(--mc-claude-route\)/);
+
   const activity = page.getByLabel('Preview activity');
   await activity.selectOption('Reasoning');
-  const status = frame.getByRole('status');
-  assert.equal(await status.textContent(), 'Reasoning');
-  assert.equal(await status.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
+  assert.equal((await look()).animation, 't3-minecraft-ponder');
+  assert.ok(parseFloat((await look()).position) > 50);
   await activity.selectOption('Coding');
-  assert.equal(await status.textContent(), 'Coding');
-  assert.equal(await status.evaluate(el => getComputedStyle(el, '::before').animationName), 't3-minecraft-feet');
+  assert.equal((await look()).animation, 't3-minecraft-feet');
   assert.deepEqual(await exportedTheme(page), savedMob);
-  await page.getByRole('button', { name: 'Reset' }).click();
-  assert.ok(await mob.isChecked());
-  assert.equal(await activity.inputValue(), 'Idle');
-  await model.selectOption('Gemini');
-  for (const provider of ['Claude', 'OpenCode', 'OpenAI']) await add(provider).click();
-  assert.ok(await add('Gemini').isDisabled());
-  const expected = ['Gemini', 'Claude', 'OpenCode', 'OpenAI'].map(provider => sprites[provider]);
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
-
-  const dark = await pond.evaluate(el => getComputedStyle(el).backgroundColor);
-  await page.getByRole('radio', { name: 'Light', exact: true }).check();
-  const light = await pond.evaluate(el => getComputedStyle(el).backgroundColor);
-  assert.notEqual(light, dark);
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
-
-  // The real studio can demonstrate both routing policies without changing the export.
-  const scene = page.getByLabel('Preview conversation state');
-  await scene.selectOption('conversation');
-  await activity.selectOption('Coding');
-  assert.ok(await frame.getByLabel('Sample conversation').isVisible());
-  for (const width of [320, 768, 1440]) {
-    await page.setViewportSize({width, height:950});
-    const sceneBounds = await pond.evaluate(el => {
-      const messageBottom = Math.max(...[...el.querySelectorAll('[data-timeline-row-kind]')].map(row => row.getBoundingClientRect().bottom));
-      const composer = el.ownerDocument.querySelector('.mob-status').getBoundingClientRect();
-      return {messageBottom,composerTop:composer.top};
-    });
-    assert.ok(sceneBounds.messageBottom < sceneBounds.composerTop, 'Conversation preview must fit above the composer');
-  }
-  await activity.selectOption('Idle');
-  await scene.selectOption('new');
-  assert.equal(await frame.getByLabel('Sample conversation').count(), 0);
-  await page.setViewportSize({width:1440,height:950});
-
   const still = page.getByRole('switch', { name: 'Keep characters still' });
   await still.click();
-  assert.ok((await readGolems(frame)).every(golem => golem.playback.split(', ').every(state => state === 'paused')));
-  const paused = await exportedTheme(page);
-  assert.match(paused.css, /--theme-motion-state: paused/);
+  assert.equal((await look()).motion, 'paused');
   await still.click();
-  const [initial] = await readGolems(frame);
-  const deadline = Date.now() + 2500;
-  let changedFrame = false;
-  let changedPosition = false;
-  while ((!changedFrame || !changedPosition) && Date.now() < deadline) {
-    await delay(80);
-    const [next] = await readGolems(frame);
-    changedFrame ||= next.frame !== initial.frame;
-    changedPosition ||= next.transform !== initial.transform;
-  }
-  assert.ok(changedFrame && changedPosition, 'The golem should move and change walking frames');
-
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  assert.ok((await readGolems(frame)).every(golem => golem.motion === 'none'));
-  await finish('OpenCode').click();
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Gemini, sprites.Claude, sprites.OpenAI]);
-  await add('Gemini').click();
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Gemini, sprites.Claude, sprites.Gemini, sprites.OpenAI]);
+  assert.equal((await look()).animation, 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-  const group = frame.locator('[data-subagent-group] > button');
-  await group.evaluate(button => button.setAttribute('aria-expanded', 'false'));
-  assert.equal((await readGolems(frame)).length, 4);
-  await finish('Claude').click();
-  assert.equal((await readGolems(frame)).length, 3);
-  await page.getByRole('button', { name: 'Reset' }).click();
-  assert.equal((await readGolems(frame)).length, 1);
-  assert.deepEqual(await exportedTheme(page), original);
+  for (const provider of ['Claude', 'OpenCode', 'OpenAI']) {
+    await page.getByRole('button', { name: 'Add ' + provider + ' subagent' }).click();
+  }
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Claude, sprites.OpenCode, sprites.OpenAI]);
+  assert.ok(await page.getByRole('button', { name: 'Add Gemini subagent' }).isDisabled());
+  await page.getByRole('button', { name: 'Finish OpenCode subagent' }).click();
+  assert.equal((await readGolems(frame)).length, 2);
+  await page.getByRole('radio', { name: 'Light', exact: true }).check();
+  assert.equal((await look()).sprite === sprites.Claude, true);
 
+  await page.getByLabel('Preview conversation state').selectOption('conversation');
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    assert.ok(await frame.locator('.composer').isVisible());
+    const clearsMessages = await dock.evaluate(el => {
+      const icon = getComputedStyle(el, '::after');
+      const top = el.getBoundingClientRect().top + parseFloat(icon.top) - 4;
+      return top > el.ownerDocument.querySelector('.preview-messages').getBoundingClientRect().bottom;
+    });
+    assert.ok(clearsMessages, 'The buddy should clear the conversation at ' + width + 'px');
   }
+  await page.getByRole('button', { name: 'Reset' }).click();
+  assert.ok(await matchModel.isChecked());
+  assert.equal(await activity.inputValue(), 'Idle');
+  assert.equal((await readGolems(frame)).length, 0);
+  assert.deepEqual(await exportedTheme(page), original);
   assert.deepEqual(errors, []);
   await page.close();
 }

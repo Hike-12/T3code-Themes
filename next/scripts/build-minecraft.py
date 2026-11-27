@@ -41,9 +41,9 @@ canvas = '[data-chat-canvas]'
 viewport = ' > [data-assistant-citation-viewport]'
 composer = '[data-workspace-area="composer"]'
 main_composer = '[data-chat-composer-main-surface]'
-footer = '[data-chat-composer-footer]'
+buddy = f'{main_composer}[data-mc-activity], [data-chat-composer-form] {main_composer}'
 now_line = '[data-thread-now-line]'
-reasoning = '[data-v2-item-type="reasoning"]'
+thinking = ':has([data-v2-item-type="reasoning"]:not([data-side-chat-pane] *) .live-tool-shine, [data-v2-item-type="reasoning"]:not([data-side-chat-pane] *) .lucide-brain.text-foreground)'
 main_chat_only = ':not([data-side-chat-pane] *)'
 generating = f':has(> {composer} button:is([aria-label="Stop generation"], [aria-label="Stopping"]))'
 picker = '[data-chat-provider-model-picker]:not([data-side-chat-pane] *)'
@@ -210,30 +210,41 @@ css+=f'''
 :root:not(.dark) {{
   --mc-dock: #fbfdff; --mc-dock-edge: #a6b8c7; --mc-dock-lip: #fff;
 }}
-{canvas} :is({footer}, {now_line}, {reasoning}){main_chat_only}::before {{
+/* The main mob stays attached to the prompt. Subagents keep their own routes. */
+{canvas}:has({buddy}) > {chat}::before {{ content: none; }}
+{canvas} :is({buddy}){main_chat_only} {{ position: relative; }}
+{canvas} :is({buddy}){main_chat_only} [data-chat-composer-body] {{
+  min-height: 48px;
+  padding-inline-end: 56px;
+}}
+{canvas} :is({buddy}){main_chat_only}::after {{
   content: "";
-  display: block;
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 6px;
+  width: 40px;
+  height: 40px;
   pointer-events: none;
   image-rendering: pixelated;
   background: var(--mc-picked-sprite, var(--mc-status-sprite, var(--mc-openai))) no-repeat 0 0 / 800% 100%;
+  animation-play-state: var(--theme-motion-state, running);
 }}
-{canvas} {now_line}{main_chat_only}::before,
-{canvas}{generating} {footer}{main_chat_only}::before {{
+{canvas} {main_composer}[data-mc-activity="Coding"]::after,
+{canvas}{generating} :is({buddy}){main_chat_only}::after,
+{canvas}:has({now_line}{main_chat_only}) :is({buddy}){main_chat_only}::after {{
   animation: t3-minecraft-feet 1.2s steps(8, end) infinite;
   animation-play-state: var(--theme-motion-state, running);
 }}
-{canvas} {reasoning}{main_chat_only}::before {{
+{canvas} :is({buddy})[data-mc-activity="Reasoning"]{main_chat_only}::after,
+{canvas}{generating}{thinking} :is({buddy}){main_chat_only}::after {{
   background-position-x: 57.142857%;
+  animation: t3-minecraft-ponder 1.5s ease-in-out infinite alternate;
+  animation-play-state: var(--theme-motion-state, running);
 }}
-{canvas}:has({now_line}{main_chat_only}) {footer}{main_chat_only}::before {{
-  content: none;
-}}
+@keyframes t3-minecraft-ponder {{ to {{ transform: translateY(-4px); }} }}
 @media (prefers-reduced-motion: reduce) {{
   {all_slots},
-  {canvas} :is({now_line}, {footer})::before {{ animation: none !important; }}
+  {canvas} :is({buddy})::after {{ animation: none !important; }}
 }}
 '''
 reference=json.loads((ROOT/'public/downloads/nightfall-christmas.json').read_text())
