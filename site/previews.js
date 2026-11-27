@@ -1,4 +1,20 @@
-const previewContent = document.querySelector('#preview-content');
+const previewContent = `<div class="demo" data-workspace-area="conversation">
+      <div class="chat-canvas" data-assistant-citation-viewport>
+        <div class="new-thread">
+          <h1>What should we build in <strong>Theme workshop</strong>?</h1>
+          <p class="workspace-hint">or start without a project</p>
+          <div class="composer" data-chat-composer-main-surface>
+            <span>Ask anything. @ files, $ skills, / commands</span>
+            <div class="composer-tools" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m9 15 7-7a2 2 0 0 1 3 3l-9 9a5 5 0 0 1-7-7L13 3a3.5 3.5 0 1 1 5 5L8 18"/></svg>
+              <span data-chat-provider-model-picker aria-label="GPT-6 Astra">GPT-6 Astra</span>
+              <svg class="submit" viewBox="0 0 24 24"><path d="M12 18V6m-5 5 5-5 5 5"/></svg>
+            </div>
+          </div>
+          <div class="checkout"><span>Current checkout</span><span>⑂ main</span></div>
+        </div>
+      </div>
+    </div>`;
 const siteMode = document.querySelector('.site-mode');
 const darkPreference = matchMedia('(prefers-color-scheme: dark)');
 
@@ -80,16 +96,19 @@ async function loadPreview(preview) {
     const loaded = new Promise((resolve) => iframe.addEventListener('load', resolve, { once: true }));
     iframe.srcdoc = `<!doctype html><html lang="en"><head><meta charset="utf-8">
       <title>Theme preview</title><link rel="stylesheet" href="${previewStyles}">
-      </head><body>${previewContent.innerHTML}</body></html>`;
+      </head><body>${previewContent}</body></html>`;
     await loaded;
 
     const doc = iframe.contentDocument;
     const css = doc.createElement('style');
-    css.textContent = `
-      :root { --theme-background-image: url("${textureAsset}"); ${colorDeclarations(config.variants.light)} }
-      :root.dark { ${colorDeclarations({ canvas: config.canvas, ...config.colors })} }
-      ${config.css}
-    `;
+    function applyTheme(themeConfig) {
+      css.textContent = `
+        :root { --theme-background-image: url("${textureAsset}"); ${colorDeclarations(themeConfig.variants.light)} }
+        :root.dark { ${colorDeclarations({ canvas: themeConfig.canvas, ...themeConfig.colors })} }
+        ${themeConfig.css}
+      `;
+    }
+    applyTheme(config);
     function updatePreviewMode() {
       doc.documentElement.classList.toggle('dark', modeControl.querySelector(':checked').value === 'dark');
     }
@@ -113,6 +132,9 @@ async function loadPreview(preview) {
     }
     status.hidden = true;
     modeControl.hidden = false;
+    preview.dispatchEvent(new CustomEvent('theme-ready', {
+      detail: { config, applyTheme, document: doc },
+    }));
   } catch (error) {
     status.textContent = 'Live preview unavailable. The theme is still available to download.';
     console.error(`Could not load the ${theme} preview.`, error);
@@ -124,7 +146,7 @@ async function loadPreview(preview) {
 document.querySelectorAll('.preview').forEach(loadPreview);
 
 const copyButton = document.querySelector('.copy-command');
-if (navigator.clipboard?.writeText) {
+if (copyButton && navigator.clipboard?.writeText) {
   const command = document.querySelector('#install-command');
   const copyStatus = document.querySelector('.copy-status');
   copyButton.hidden = false;
@@ -139,38 +161,8 @@ if (navigator.clipboard?.writeText) {
   });
 }
 
-document.querySelectorAll('.preview-viewport').forEach(viewport => {
+document.querySelectorAll('.preview-viewport:not(.studio-viewport)').forEach(viewport => {
   new ResizeObserver(() => {
     viewport.querySelector('iframe').style.transform = `scale(${viewport.clientWidth / 960})`;
   }).observe(viewport);
-});
-
-const themeDialog = document.querySelector('.theme-dialog');
-let openedTheme;
-let themePlaceholder;
-document.querySelectorAll('.open-theme').forEach(button => {
-  button.hidden = false;
-  button.addEventListener('click', () => {
-    openedTheme = button.closest('.theme');
-    themePlaceholder = document.createComment('theme position');
-    openedTheme.before(themePlaceholder);
-    themeDialog.querySelector('.dialog-content').append(openedTheme);
-    loadPreview(openedTheme.querySelector('.preview'));
-    themeDialog.showModal();
-  });
-});
-function closeTheme() {
-  themeDialog.close();
-}
-document.querySelector('.close-dialog').addEventListener('click', closeTheme);
-themeDialog.addEventListener('close', () => {
-  if (!openedTheme) return;
-  themePlaceholder.replaceWith(openedTheme);
-  loadPreview(openedTheme.querySelector('.preview'));
-  openedTheme.querySelector('.open-theme').focus();
-  openedTheme = null;
-});
-themeDialog.addEventListener('click', event => {
-  if (event.target === themeDialog) closeTheme();
-  if (event.target.closest('a[href^="#"]')) closeTheme();
 });

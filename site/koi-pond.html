@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fafafa">
+  <meta name="description" content="Set the water color and swimming speed, then download your theme for T3 Code.">
+  <title>Koi pond · T3 Code themes</title>
+  <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./studio.css">
+  <script type="module" src="./previews.js"></script>
+  <script type="module" src="./studio.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to theme</a>
+  <header class="site-header wrap">
+    <a class="wordmark" href="./">T3 / themes</a>
+    <nav aria-label="Main navigation">
+      <a href="./#themes">Collection</a>
+      <a href="./#install-koi">Install</a>
+      <button class="site-mode" type="button" aria-label="Dark website" aria-pressed="false" hidden>
+        <span aria-hidden="true">◐</span><span>Site</span>
+      </button>
+    </nav>
+  </header>
+  <main class="wrap studio" id="main">
+    <header class="intro">
+      <h1>Koi pond</h1>
+      <p>Set the water color and swimming speed, then download your theme for T3 Code.</p>
+    </header>
+    <div class="studio-layout theme">
+      <section class="studio-stage" aria-label="Koi pond preview">
+        <div class="preview" data-theme="koi-pond" aria-busy="true">
+          <div class="preview-toolbar">
+            <span class="window-title">Live preview</span>
+            <fieldset class="mode-control" hidden>
+              <legend class="sr-only">Preview appearance</legend>
+              <label><input type="radio" name="appearance" value="dark" checked><span>Dark</span></label>
+              <label><input type="radio" name="appearance" value="light"><span>Light</span></label>
+            </fieldset>
+          </div>
+          <div class="preview-viewport studio-viewport"><iframe title="Live Koi pond preview" sandbox="allow-same-origin" tabindex="-1"></iframe></div>
+          <p class="preview-status" role="status">Loading preview…</p>
+          <noscript><p>Enable JavaScript to customize the theme.</p></noscript>
+        </div>
+        <fieldset class="school-controls" disabled>
+          <legend>Test subagents</legend>
+          <div class="sample-controls">
+            <label>Parent model <select id="parent-provider"><option>OpenAI</option><option>Claude</option><option>Gemini</option></select></label>
+            <label>Subagent model <select id="agent-provider"><option>Claude</option><option>OpenAI</option><option>Gemini</option></select></label>
+            <button id="spawn-agent" class="open-theme" type="button">Spawn fish</button>
+            <button id="finish-agents" class="open-theme" type="button" disabled>Finish next fish</button>
+          </div>
+          <p id="school-status" role="status">No subagents running. Add up to three.</p>
+        </fieldset>
+      </section>
+      <section class="studio-settings" aria-labelledby="settings-title">
+        <h2 id="settings-title">Customize</h2>
+        <form id="theme-settings">
+          <fieldset>
+            <legend>Background</legend>
+            <div class="color-setting">
+              <label for="dark-swatch">Dark base</label>
+              <input id="dark-swatch" name="dark" type="color" value="#101414">
+              <input aria-label="Dark base hex" data-swatch="dark" type="text" value="#101414" maxlength="7" pattern="#[0-9A-Fa-f]{6}" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="color-setting">
+              <label for="light-swatch">Light base</label>
+              <input id="light-swatch" name="light" type="color" value="#e8ede9">
+              <input aria-label="Light base hex" data-swatch="light" type="text" value="#E8EDE9" maxlength="7" pattern="#[0-9A-Fa-f]{6}" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="color-setting">
+              <label for="reflection-dark-swatch">Dark reflection</label>
+              <input id="reflection-dark-swatch" name="reflection-dark" type="color" value="#a8bdb7">
+              <input aria-label="Dark reflection hex" data-swatch="reflection-dark" type="text" value="#A8BDB7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="color-setting">
+              <label for="reflection-light-swatch">Light reflection</label>
+              <input id="reflection-light-swatch" name="reflection-light" type="color" value="#ffffff">
+              <input aria-label="Light reflection hex" data-swatch="reflection-light" type="text" value="#FFFFFF" maxlength="7" pattern="#[0-9A-Fa-f]{6}" spellcheck="false" autocomplete="off">
+            </div>
+            <label class="strength">Reflection strength <input name="reflection-strength" type="range" min="0" max="100" value="42" data-unit="%"><output>42%</output></label>
+          </fieldset>
+          <fieldset>
+            <legend>Fish movement</legend>
+            <label>Claude <input name="claude-time" type="range" min="10" max="120" value="72"><output>72 s</output></label>
+            <label>OpenAI <input name="openai-time" type="range" min="10" max="120" value="27"><output>27 s</output></label>
+            <label>Gemini <input name="gemini-time" type="range" min="10" max="120" value="43"><output>43 s</output></label>
+            <label class="toggle"><input name="still" type="checkbox"> Keep fish still</label>
+          </fieldset>
+          <div class="studio-actions">
+            <button class="open-theme" type="reset">Reset</button>
+            <button class="download" type="submit" disabled>Download JSON <span aria-hidden="true">↓</span></button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+  </main>
+</body>
+</html>
