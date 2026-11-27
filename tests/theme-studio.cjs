@@ -97,6 +97,27 @@ async function testStudio(browser) {
   await fade();
   assert.equal((await readPond(frame)).length, 1);
 
+  // T3 Code renders a single delegated task outside the grouped timeline row.
+  await frame.locator('.demo').evaluate(pond => {
+    pond.querySelector('.studio-group').remove();
+    const row = document.createElement('button');
+    row.dataset.v2ItemType = 'subagent';
+    row.setAttribute('aria-description', 'Running');
+    row.innerHTML = `<span aria-hidden="true">
+      <svg viewBox="0 0 128 128"><image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAQAElEQVR4nOx9CbhsVXXmWvucqst7AmpQwDmoDUgQpTtGmcRIBEHhAwxEMRpCjEOa2NoK7/"/></svg>
+      <span class="bg-info"></span>
+    </span>`;
+    pond.querySelector('[data-assistant-citation-viewport]').append(row);
+  });
+  await fade();
+  assert.deepEqual((await readPond(frame)).map(fish => fish.motion), ['t3-koi-openai', 't3-koi-gemini']);
+  await frame.locator('.demo [data-v2-item-type="subagent"]').first().evaluate(row => {
+    row.setAttribute('aria-description', 'Finished');
+    row.querySelector('.bg-info').className = 'bg-success';
+  });
+  await fade();
+  assert.equal((await readPond(frame)).length, 1);
+
   await page.getByLabel('Parent model').selectOption('Claude');
   await page.locator('input[name="claude-time"]').fill('91');
   await page.getByRole('textbox', { name: 'Light base hex' }).fill('#DDE4DC');
