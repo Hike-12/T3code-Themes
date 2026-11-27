@@ -90,6 +90,8 @@ async function testStudio(browser) {
   const spawn = add('Claude');
   await spawn.waitFor();
   await page.getByRole('button', { name: 'Download JSON' }).waitFor();
+  const reset = page.getByRole('button', { name: 'Reset' });
+  assert.ok(await reset.isDisabled());
   assert.equal(await page.getByRole('slider', { name: 'Reflection strength' }).count(), 0);
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundColor), 'rgb(16, 16, 16)');
@@ -155,9 +157,12 @@ async function testStudio(browser) {
   assert.equal((await readPond(frame)).length, 1);
 
   await page.getByLabel('Main thread model').selectOption('Claude');
-  await setSlider(page.getByRole('slider', { name: 'Claude lap time' }), 91);
+  const claudeLapTime = page.getByRole('slider', { name: 'Claude lap time' });
+  await setSlider(claudeLapTime, 91);
   const lightHex = page.getByRole('textbox', { name: 'Light base hex' });
+  await page.getByRole('radio', { name: 'Dark', exact: true }).check();
   await lightHex.fill('DDE4DC');
+  assert.ok(await page.getByRole('radio', { name: 'Light', exact: true }).isChecked());
   assert.equal(await page.locator('input[name="light"]').inputValue(), '#dde4dc');
   await lightHex.fill('#bad');
   assert.equal(await lightHex.getAttribute('aria-invalid'), 'true');
@@ -170,6 +175,7 @@ async function testStudio(browser) {
   assert.equal((await readPond(frame))[0].duration, '91s');
   await page.getByRole('switch', { name: 'Keep fish still' }).click();
   assert.equal((await readPond(frame))[0].motion, 'none');
+  assert.ok(await claudeLapTime.isDisabled());
 
   const pond = await exportedTheme(page);
   assert.equal(pond.id, 'koi-pond');
@@ -183,7 +189,8 @@ async function testStudio(browser) {
   assert.ok(await spawn.isEnabled());
   await spawn.click();
   assert.ok(await spawn.isDisabled());
-  await page.getByRole('button', { name: 'Reset' }).click();
+  await reset.click();
+  assert.ok(await reset.isDisabled());
   assert.equal(await page.getByRole('slider', { name: 'Claude lap time' }).getAttribute('aria-valuenow'), '72');
   assert.equal((await readPond(frame))[0].duration, '27s');
   assert.equal(await page.getByLabel('Main thread model').inputValue(), 'OpenAI');

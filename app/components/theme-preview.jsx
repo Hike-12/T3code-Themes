@@ -104,9 +104,8 @@ function PreviewConversation({ parent, agents }) {
   );
 }
 
-export function ThemePreview({ slug, config, error, studio = false, parent = 'OpenAI', agents = emptyAgents }) {
+export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents }) {
   const theme = themes[slug];
-  const [appearance, setAppearance] = useState('dark');
   const [frame, setFrame] = useState(null);
   const preview = useRef(null);
   const iframe = useRef(null);
@@ -147,7 +146,7 @@ export function ThemePreview({ slug, config, error, studio = false, parent = 'Op
     <div className="preview" data-theme={slug} data-preview-appearance={appearance} aria-busy={!ready && !error} ref={preview}>
       <div className="preview-toolbar">
         <span className="window-title">Live preview</span>
-        <AppearanceControl label={theme.name + ' preview appearance'} appearance={appearance} onChange={setAppearance} disabled={!ready} />
+        <AppearanceControl label={theme.name + ' preview appearance'} appearance={appearance} onChange={onAppearanceChange} disabled={!ready} />
       </div>
       <div className={studio ? 'preview-viewport studio-viewport' : 'preview-viewport'}>
         <iframe
@@ -178,5 +177,6 @@ export function ThemePreview({ slug, config, error, studio = false, parent = 'Op
 
 export function GalleryPreview({ slug }) {
   const { config, error } = useTheme(slug);
-  return <ThemePreview slug={slug} config={config} error={error} />;
+  const [appearance, setAppearance] = useState('dark');
+  return <ThemePreview slug={slug} config={config} error={error} appearance={appearance} onAppearanceChange={setAppearance} />;
 }
