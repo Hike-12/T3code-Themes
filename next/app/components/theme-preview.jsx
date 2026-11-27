@@ -85,9 +85,10 @@ function School({ agents }) {
   );
 }
 
-function PreviewConversation({ slug, parent, agents, conversation, activity, mob, onMobChange }) {
+function PreviewConversation({ slug, parent, agents, conversation, activity, reasoning, mob, onMobChange }) {
   const isMinecraft = slug === 'blockworks';
   const [provider, model = models[parent]] = parent.split('|');
+  const pickerLabel = reasoning ? `${model.replace(/ (?:low|medium|high|max)$/i, '')}, ${reasoning}` : model;
   const working = activity === 'Coding' || activity === 'Reasoning';
   const status = { Idle: 'Settled', Coding: 'Working 37s', Reasoning: 'Thinking', Approval: 'Needs approval', Error: 'Tool failed', Background: 'Other thread working' };
   return (
@@ -118,7 +119,7 @@ function PreviewConversation({ slug, parent, agents, conversation, activity, mob
             {isMinecraft ? <div data-chat-composer-body="">Ask anything…</div> : <span>Ask anything…</span>}
             <div className="composer-tools" aria-hidden={!onMobChange || undefined}>
               <Paperclip size={14} aria-hidden="true" />
-              <span data-chat-provider-model-picker="" aria-label={`${provider} ${model}`}>{model}</span>
+              <span data-chat-provider-model-picker="" aria-label={`${provider} ${pickerLabel}`}>{pickerLabel}</span>
               {onMobChange && <select className="mob-select" aria-label="Mob buddy" value={mob} onChange={event => onMobChange(event.target.value)}>
                 <option value="auto">Match model</option>
                 {Object.entries(minecraftMobs).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
@@ -144,7 +145,7 @@ function PreviewConversation({ slug, parent, agents, conversation, activity, mob
   );
 }
 
-export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents, activity = 'Idle', mob, onMobChange }) {
+export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents, activity = 'Idle', reasoning, mob, onMobChange }) {
   const theme = themes[slug];
   const [frame, setFrame] = useState(null);
   const [conversation, setConversation] = useState(false);
@@ -215,7 +216,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         frame.head,
       )}
       {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation}
-        activity={activity} mob={mob} onMobChange={onMobChange} />, frame.body)}
+        activity={activity} reasoning={reasoning} mob={mob} onMobChange={onMobChange} />, frame.body)}
     </div>
   );
 }

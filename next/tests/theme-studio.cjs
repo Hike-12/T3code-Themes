@@ -348,9 +348,11 @@ async function testBlockworks(browser) {
   const dock = frame.locator('[data-chat-composer-main-surface]');
   const look = () => dock.evaluate(el => {
     const icon = getComputedStyle(el, '::after');
+    const aura = getComputedStyle(el, '::before');
     return { sprite: icon.backgroundImage, animation: icon.animationName, motion: icon.animationPlayState,
       position: icon.backgroundPositionX, anchor: icon.position, pointerEvents: icon.pointerEvents,
-      width: icon.width, sizing: icon.backgroundSize, badge: getComputedStyle(el, '::before').content };
+      width: icon.width, sizing: icon.backgroundSize, badge: aura.content, aura: aura.animationName,
+      particles: aura.backgroundImage, lift: icon.getPropertyValue('--mc-lift').trim() };
   });
   const sprites = {};
   for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
@@ -361,7 +363,7 @@ async function testBlockworks(browser) {
   assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal((await look()).anchor, 'absolute');
   assert.equal((await look()).width, '64px');
-  assert.equal((await look()).sizing, '300% 100%');
+  assert.equal((await look()).sizing, '400% 100%');
   assert.match((await look()).sprite, /^url\("data:image\/png;base64,/);
   assert.equal((await look()).pointerEvents, 'none');
   assert.equal((await look()).animation, 'minecraft-idle');
@@ -382,8 +384,8 @@ async function testBlockworks(browser) {
 
   const activity = page.getByLabel('Preview activity');
   await activity.selectOption('Reasoning');
-  assert.equal((await look()).animation, 'minecraft-idle');
-  assert.equal((await look()).position, '50%');
+  assert.equal((await look()).animation, 'minecraft-thinking');
+  assert.equal((await look()).position, '66.6667%');
   await activity.selectOption('Coding');
   assert.equal((await look()).animation, 'minecraft-working');
   assert.equal((await look()).position, '100%');
@@ -398,9 +400,27 @@ async function testBlockworks(browser) {
       getComputedStyle(el, '::after').backgroundImage ===
       getComputedStyle(el.ownerDocument.documentElement).getPropertyValue(property).trim(), expected), true);
   };
-  await gear('Claude|Haiku 4.5', '--mc-claude-fast');
-  await gear('Claude|Sonnet 4.6', '--mc-claude');
-  await gear('OpenAI|6.2 Sol Medium', '--mc-claude-heavy');
+  const effort = page.getByLabel('Reasoning level');
+  for (const state of ['Coding', 'Reasoning']) {
+    await activity.selectOption(state);
+    for (const [level, animation, lift] of [
+      ['Low', 'none', '0px'], ['Medium', 'minecraft-glints', '0px'], ['High', 'minecraft-max-glints', '-4px'],
+    ]) {
+      await effort.selectOption(level);
+      for (const [modelName, sprite] of [
+        ['Claude|Haiku 4.5', '--mc-claude-fast'],
+        ['Claude|Sonnet 4.6', '--mc-claude'],
+        ['OpenAI|6.2 Sol Medium', '--mc-claude-heavy'],
+      ]) {
+        await gear(modelName, sprite);
+        const visual = await look();
+        assert.equal(visual.aura, animation, `${state} ${modelName} at ${level}`);
+        assert.equal(visual.lift, lift);
+        if (level === 'Low') assert.equal(visual.particles, 'none, none');
+        else assert.match(visual.particles, /linear-gradient/);
+      }
+    }
+  }
   assert.deepEqual(await exportedTheme(page), savedMob);
   await buddy.selectOption('auto');
   await gear('Gemini|Flash', '--mc-gemini-fast');
@@ -417,6 +437,7 @@ async function testBlockworks(browser) {
   await still.click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal((await look()).animation, 'none');
+  assert.equal((await look()).aura, 'none');
   assert.equal(await studioCard.evaluate(el => getComputedStyle(el).animationName), 'none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
@@ -439,6 +460,7 @@ async function testBlockworks(browser) {
   await page.getByRole('button', { name: 'Reset' }).click();
   assert.equal(await buddy.inputValue(), 'auto');
   assert.equal(await activity.inputValue(), 'Idle');
+  assert.equal(await effort.inputValue(), 'Low');
   assert.deepEqual(await exportedTheme(page), original);
   assert.deepEqual(errors, []);
   await page.close();

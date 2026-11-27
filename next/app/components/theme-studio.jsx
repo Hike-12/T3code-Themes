@@ -175,11 +175,12 @@ export function ThemeStudio({ slug }) {
   const [parent, setParent] = useState(defaultParent);
   const [agents, setAgents] = useState([]);
   const [activity, setActivity] = useState('Idle');
+  const [reasoning, setReasoning] = useState('Low');
   const running = agents.filter(agent => agent.running).length;
   const configured = config && configureTheme(config, values, slug);
   const invalid = Object.values(drafts).some(draft => draft != null && !/^#?[\da-f]{6}$/i.test(draft));
   const canReset = invalid || values.still || agents.length > 0 || parent !== defaultParent
-    || activity !== 'Idle'
+    || activity !== 'Idle' || reasoning !== 'Low'
     || Object.entries(theme.defaults).some(([name, value]) => values[name] !== value);
 
   function updateValue(name, value) {
@@ -229,6 +230,7 @@ export function ThemeStudio({ slug }) {
     setParent(defaultParent);
     setAgents([]);
     setActivity('Idle');
+    setReasoning('Low');
   }
 
   function download(event) {
@@ -256,6 +258,7 @@ export function ThemeStudio({ slug }) {
       <div className="studio-layout">
         <section className="studio-stage" aria-label={theme.name + ' preview'}>
           <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} activity={activity} mob={values.mob}
+            reasoning={isMinecraft ? reasoning : undefined}
             onMobChange={isMinecraft ? mob => updateValue('mob', mob) : undefined} />
           {hasAgents && <SubagentTest parent={parent} setParent={setParent} agents={agents} running={running} spawn={spawn} finish={finish} disabled={!configured} />}
         </section>
@@ -271,14 +274,26 @@ export function ThemeStudio({ slug }) {
                   {isMinecraft && <>
                     <label className="parent-control mob-activity">Main thread model
                       <select value={parent} onChange={event => setParent(event.target.value)}>
-                        {pondProviders.map(provider => <option key={provider}>{provider}</option>)}
-                        <optgroup label="Model tier examples">
+                        <optgroup label="Fast · Iron pickaxe">
                           <option value="Claude|Haiku 4.5">Claude Haiku 4.5</option>
                           <option value="Gemini|Flash">Gemini Flash</option>
+                        </optgroup>
+                        <optgroup label="Balanced · Diamond sword">
                           <option value="Claude|Sonnet 4.6">Claude Sonnet 4.6</option>
                           <option value="OpenAI|GPT-5">OpenAI GPT-5</option>
+                          <option value="OpenCode">OpenCode</option>
+                        </optgroup>
+                        <optgroup label="Flagship · Netherite sword">
+                          <option value="Claude">Claude Opus</option>
+                          <option value="Gemini">Gemini Pro</option>
+                          <option value="OpenAI">OpenAI 6.1 Sol</option>
                           <option value="OpenAI|6.2 Sol Medium">OpenAI 6.2 Sol Medium</option>
                         </optgroup>
+                      </select>
+                    </label>
+                    <label className="parent-control mob-activity">Reasoning level
+                      <select value={reasoning} onChange={event => setReasoning(event.target.value)}>
+                        {['Low', 'Medium', 'High'].map(level => <option key={level}>{level}</option>)}
                       </select>
                     </label>
                     <label className="parent-control mob-activity">Preview activity

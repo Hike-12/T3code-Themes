@@ -21,6 +21,9 @@ mob picker needs a persisted T3 Code preference and an app-owned control.
 Use Match model for automatic selection. To pin a mob, select it in the studio
 composer footer, download the JSON, and import it in Settings > Appearance.
 The pinned mob still gets its working gear from the active model label.
+The model name selects the weapon material. The effort detail in the native
+picker's accessible label independently selects the enchantment. An absent
+or unrecognized effort detail leaves the weapon unenchanted.
 
 Rebuild from next/:
 uv run --with pillow python scripts/build-minecraft.py

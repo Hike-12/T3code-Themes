@@ -38,18 +38,18 @@ def outlined(image):
 def held_gear(tier):
     tool = Image.new('RGBA', (SPRITE_SIZE, SPRITE_SIZE))
     draw = ImageDraw.Draw(tool)
-    if tier == 'heavy':
-        draw.line([(23, 28), (27, 22)], fill='#8569a1', width=2)
-        draw.polygon([(24, 23), (27, 17), (30, 16), (30, 20), (27, 24)], fill='#483754')
-        draw.line([(27, 22), (29, 18)], fill='#b694e9', width=2)
-        draw.line([(22, 22), (26, 25)], fill='#756091')
-        draw.point((29, 17), fill='#ecb8fc')
+    if tier == 'fast':
+        draw.line([(23, 28), (27, 20)], fill='#78350f', width=2)
+        draw.line([(24, 27), (26, 23)], fill='#ac6940')
+        draw.polygon([(22, 19), (24, 17), (28, 17), (30, 19), (30, 22), (28, 21), (27, 19)], fill='#cbd5e1')
+        draw.line([(25, 18), (28, 19), (29, 21)], fill='#78889f')
     else:
-        draw.line([(23, 28), (27, 20)], fill='#ad774d', width=2)
-        draw.line([(24, 27), (26, 23)], fill='#deb285')
-        head, edge = ('#a5a095', '#706d65') if tier == 'fast' else ('#76e5e1', '#209ba9')
-        draw.polygon([(22, 19), (24, 17), (28, 17), (30, 19), (30, 22), (28, 21), (27, 19)], fill=head)
-        draw.line([(25, 18), (28, 19), (29, 21)], fill=edge)
+        blade, bevel, guard = ('#3b3340', '#6b5b73', '#f59e0b') if tier == 'heavy' else ('#22d3ee', '#0284c7', '#a5f3fc')
+        draw.line([(23, 28), (27, 22)], fill='#673f2b', width=2)
+        draw.polygon([(24, 23), (27, 17), (30, 16), (30, 20), (27, 24)], fill=blade)
+        draw.line([(27, 22), (29, 18)], fill=bevel, width=2)
+        draw.line([(22, 22), (26, 25)], fill=guard)
+        draw.point((29, 17), fill=guard)
     return outlined(tool)
 
 PALETTES = {
@@ -63,12 +63,12 @@ PALETTES = {
 
 def mini_mob(key, tier):
     colors = PALETTES[key]
-    sheet = Image.new('RGBA', (SPRITE_SIZE * 3, SPRITE_SIZE))
-    for stage in range(3):
+    sheet = Image.new('RGBA', (SPRITE_SIZE * 4, SPRITE_SIZE))
+    for stage in range(4):
         frame = Image.new('RGBA', (SPRITE_SIZE, SPRITE_SIZE))
         draw = ImageDraw.Draw(frame)
         if key == 'gemini':
-            wing_tip = 14 - 2 * stage
+            wing_tip = (14, 12, 10, 13)[stage]
             draw.polygon([(9, 21), (2, wing_tip), (2, 21), (7, 25)], fill=(130, 223, 255, 165))
             draw.polygon([(20, 21), (28, wing_tip), (28, 21), (23, 25)], fill=(130, 223, 255, 165))
             draw.line([(2, wing_tip + 2), (7, 21)], fill=(209, 245, 255, 205))
@@ -148,7 +148,7 @@ def mini_mob(key, tier):
         base = Image.new('RGBA', frame.size)
         ImageDraw.Draw(base).ellipse((4, 29, 25, 31), fill=(7, 8, 10, 115))
         base.alpha_composite(outlined(frame))
-        if stage == 2:
+        if stage >= 2:
             base.alpha_composite(held_gear(tier))
         sheet.paste(base, (stage * SPRITE_SIZE, 0))
     return sheet
@@ -181,14 +181,16 @@ for y in range(32):
         stone.putpixel((x, y), strata[layer])
 assets['deepslate'] = sprite_url(stone)
 
-glints = Image.new('RGBA', (24, 18))
-draw = ImageDraw.Draw(glints)
-draw.point((1, 11), fill='#55a44a')
-draw.point((6, 3), fill='#80ff20')
-draw.line((20, 3, 22, 3), fill='#89e7ff')
-draw.line((21, 2, 21, 4), fill='#89e7ff')
-draw.point((22, 12), fill='#80ff20')
-assets['glints'] = sprite_url(glints)
+sparks = Image.new('RGBA', (24, 18))
+draw = ImageDraw.Draw(sparks)
+draw.point((19, 8), fill='#80ff20')
+draw.point((22, 11), fill='#67e8f9')
+assets['effort-sparks-art'] = sprite_url(sparks)
+draw.line([(20, 2), (20, 4), (22, 4)], fill='#c084fc')
+draw.point((22, 2), fill='#f5d0fe')
+draw.line([(16, 5), (17, 4), (18, 5), (17, 6), (16, 5)], fill='#d8b4fe')
+draw.line([(21, 14), (22, 15), (23, 14)], fill='#67e8f9')
+assets['effort-runes'] = sprite_url(sparks)
 
 # Each icon occupies a 16px box and replaces only the existing control glyph.
 icons = {
