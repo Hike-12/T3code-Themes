@@ -8,9 +8,6 @@ export const themes = {
     defaults: {
       dark: '#101414',
       light: '#e8ede9',
-      'reflection-dark': '#a8bdb7',
-      'reflection-light': '#ffffff',
-      'reflection-strength': 42,
       'claude-time': 72,
       'openai-time': 27,
       'gemini-time': 43,

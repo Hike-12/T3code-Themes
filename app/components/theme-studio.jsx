@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowDown, ArrowLeft, Plus, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { themes } from '../themes';
 import { ThemePreview, useTheme } from './theme-preview';
 import { DownloadAction, RangeField, SwitchField } from './ui';
@@ -10,7 +10,7 @@ import '../studio.css';
 
 const providers = ['Claude', 'OpenAI', 'Gemini'];
 const agentLimit = 3;
-const reflectionKey = 't3-themes-pond-reflection';
+const backgrounds = [['dark', 'Dark base'], ['light', 'Light base']];
 
 function configureTheme(base, values, isPond) {
   const dark = values.dark;
@@ -25,9 +25,6 @@ function configureTheme(base, values, isPond) {
     css = `:root {
   --koi-water-dark: ${dark};
   --koi-water-light: ${light};
-  --koi-reflection-dark: ${values['reflection-dark']};
-  --koi-reflection-light: ${values['reflection-light']};
-  --koi-reflection-strength: ${values['reflection-strength'] / 100};
   ${speeds.join(' ')}
 }`;
     if (values.still) {
@@ -125,27 +122,8 @@ export function ThemeStudio({ slug }) {
   const configured = config && configureTheme(config, values, isPond);
   const invalid = Object.values(drafts).some(draft => draft != null && !/^#?[\da-f]{6}$/i.test(draft));
 
-  useEffect(() => {
-    if (!isPond) return;
-    try {
-      const saved = window.localStorage.getItem(reflectionKey);
-      if (saved != null && /^\d{1,3}$/.test(saved) && Number(saved) <= 100) {
-        setValues(current => ({ ...current, 'reflection-strength': Number(saved) }));
-      }
-    } catch {
-      // The controls still work without storage.
-    }
-  }, [isPond]);
-
   function updateValue(name, value) {
     setValues(current => ({ ...current, [name]: value }));
-    if (name === 'reflection-strength') {
-      try {
-        window.localStorage.setItem(reflectionKey, String(value));
-      } catch {
-        // The current preview still uses the selected value.
-      }
-    }
   }
 
   function updateSwatch(name, value) {
@@ -181,13 +159,6 @@ export function ThemeStudio({ slug }) {
     setDrafts({});
     setParent('OpenAI');
     setAgents([]);
-    if (isPond) {
-      try {
-        window.localStorage.removeItem(reflectionKey);
-      } catch {
-        // Defaults still apply to the current preview.
-      }
-    }
   }
 
   function download(event) {
@@ -200,12 +171,6 @@ export function ThemeStudio({ slug }) {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-
-  const backgrounds = [['dark', 'Dark base'], ['light', 'Light base']];
-  const reflections = [['reflection-dark', 'Dark reflection'], ['reflection-light', 'Light reflection']];
-  const colors = fields => fields.map(([name, label]) => (
-    <ColorField key={name} name={name} label={label} value={values[name]} draft={drafts[name]} onSwatch={updateSwatch} onHex={updateHex} />
-  ));
 
   return (
     <main className="wrap studio" id="main">
@@ -233,18 +198,13 @@ export function ThemeStudio({ slug }) {
               <fieldset className="settings-controls" disabled={!configured}>
                 <fieldset>
                   <legend>Background</legend>
-                  {colors(backgrounds)}
+                  {backgrounds.map(([name, label]) => (
+                    <ColorField key={name} name={name} label={label} value={values[name]} draft={drafts[name]} onSwatch={updateSwatch} onHex={updateHex} />
+                  ))}
                   {!isPond && (
                     <RangeField name="grain-strength" label="Grain strength" value={values['grain-strength']} onChange={updateValue} disabled={!configured} />
                   )}
                 </fieldset>
-                {isPond && (
-                  <fieldset>
-                    <legend>Reflections</legend>
-                    <RangeField name="reflection-strength" label="Reflection strength" value={values['reflection-strength']} onChange={updateValue} disabled={!configured} />
-                    {colors(reflections)}
-                  </fieldset>
-                )}
                 {isPond && (
                   <fieldset>
                     <legend>Fish movement</legend>

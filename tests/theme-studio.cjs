@@ -78,6 +78,8 @@ async function testStudio(browser) {
     if (slug === 'dark-texture') {
       assert.match(config.css, /data:image\/webp;base64,/);
       assert.ok(config.css.length < 100000);
+    } else {
+      assert.doesNotMatch(config.css, /--koi-reflection/);
     }
   }
   await page.getByRole('link', { name: 'Customize pond' }).click();
@@ -88,6 +90,8 @@ async function testStudio(browser) {
   const spawn = add('Claude');
   await spawn.waitFor();
   await page.getByRole('button', { name: 'Download JSON' }).waitFor();
+  assert.equal(await page.getByRole('slider', { name: 'Reflection strength' }).count(), 0);
+  assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
   assert.ok(await frame.locator('.demo').evaluate(pond => {
     const canvas = pond.querySelector('[data-assistant-citation-viewport]').getBoundingClientRect();
     const viewport = pond.getBoundingClientRect();
@@ -103,6 +107,7 @@ async function testStudio(browser) {
     't3-koi-openai', 't3-koi-claude', 't3-koi-gemini', 't3-koi-openai',
   ]);
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
+  assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
   assert.deepEqual((await readPond(frame)).slice(0, 3).map(fish => fish.color), [
     '#e8eae1', '#ffab62', '#a9d7ff',
   ]);
@@ -160,9 +165,6 @@ async function testStudio(browser) {
   await lightHex.fill('DDE4DC');
   await lightHex.blur();
   assert.equal(await lightHex.inputValue(), '#DDE4DC');
-  await page.locator('input[name="reflection-light"]').fill('#ffd5ac');
-  const reflection = page.getByRole('slider', { name: 'Reflection strength' });
-  await setSlider(reflection, 67);
   assert.equal((await readPond(frame))[0].duration, '91s');
   await page.getByRole('switch', { name: 'Keep fish still' }).click();
   assert.equal((await readPond(frame))[0].motion, 'none');
@@ -171,8 +173,7 @@ async function testStudio(browser) {
   assert.equal(pond.id, 'koi-pond');
   assert.equal(pond.variants.light.canvas, '#dde4dc');
   assert.match(pond.css, /--koi-claude-time: 91s/);
-  assert.match(pond.css, /--koi-reflection-light: #ffd5ac/);
-  assert.match(pond.css, /--koi-reflection-strength: 0.67/);
+  assert.doesNotMatch(pond.css, /--koi-reflection/);
   // A finished slot can be reused and Reset clears a running simulation.
   for (let count = 0; count < 3; count++) await spawn.click();
   assert.ok(await spawn.isDisabled());
@@ -191,13 +192,6 @@ async function testStudio(browser) {
   assert.equal((await readPond(frame)).length, 2);
   await finish('Claude').first().click();
   assert.equal((await readPond(frame)).length, 1);
-
-  await reflection.press('Home');
-  await page.reload();
-  await frame.locator('.demo').waitFor();
-  assert.equal(await reflection.getAttribute('aria-valuenow'), '0');
-  const savedPond = await exportedTheme(page);
-  assert.match(savedPond.css, /--koi-reflection-strength: 0;/);
 
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
