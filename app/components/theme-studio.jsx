@@ -11,12 +11,37 @@ import '../studio.css';
 const agentLimit = 3;
 const backgrounds = [['dark', 'Dark base'], ['light', 'Light base']];
 
-function configureTheme(base, values, isPond) {
+function configureTheme(base, values, slug) {
+  if (slug === 'nightfall-christmas') {
+    const defaults = themes[slug].defaults;
+    if (!values.still && Object.keys(defaults).every(key => values[key] === defaults[key])) return base;
+    const duration = 40 - values['snow-speed'] * .5;
+    return {
+      ...base, canvas: values.dark,
+      colors: { ...base.colors, canvas: values.dark },
+      variants: { ...base.variants, light: { ...base.variants.light, canvas: values.light } },
+      css: base.css + `\n:root {
+        --nightfall-snow-intensity: ${values['snow-intensity'] / 45};
+        --nightfall-snow-density: ${Math.max(.2, values['snow-intensity'] / 45)};
+        --nightfall-snow-duration: ${duration}s;
+        --nightfall-light-brightness: ${values['light-brightness'] / 100};
+        --nightfall-snowmen: ${values.snowmen ? 1 : 0};
+        --theme-motion-state: ${values.still ? 'paused' : 'running'};
+      }
+      :root.dark, :root:not(.dark) { --nightfall-ledge: var(${values.accumulation ? '--nightfall-snowy' : '--nightfall-bare'}); }\n`,
+    };
+  }
+  if (themes[slug].motionLabel) {
+    return values.still
+      ? { ...base, css: base.css + '\n:root { --theme-motion-state: paused; }\n' }
+      : base;
+  }
+
   const dark = values.dark;
   const light = values.light;
   let css;
 
-  if (isPond) {
+  if (slug === 'koi-pond') {
     const speeds = pondProviders.map(provider => {
       const name = provider.toLowerCase();
       return `--koi-${name}-time: ${values[name + '-time']}s;`;
@@ -119,7 +144,7 @@ function InstallInstructions({ name }) {
     <section id="install" className="studio-note" aria-labelledby="install-title">
       <h2 id="install-title">Install {name}</h2>
       <ol>
-        <li>Download your customized JSON.</li>
+        <li>Download your theme JSON.</li>
         <li>In T3 Code, open <strong>Settings → Appearance</strong> and choose <strong>Import a file</strong>.</li>
         <li>Open the JSON and select <strong>{name}</strong> in the theme picker.</li>
       </ol>
@@ -130,16 +155,18 @@ function InstallInstructions({ name }) {
 export function ThemeStudio({ slug }) {
   const theme = themes[slug];
   const isPond = slug === 'koi-pond';
+  const hasAgents = isPond || slug === 'blockworks' || slug === 'nightfall-christmas';
+  const defaultParent = theme.previewProvider || 'OpenAI';
   const { config, error } = useTheme(slug);
   const [values, setValues] = useState(theme.defaults);
   const [drafts, setDrafts] = useState({});
   const [appearance, setAppearance] = useState('dark');
-  const [parent, setParent] = useState('OpenAI');
+  const [parent, setParent] = useState(defaultParent);
   const [agents, setAgents] = useState([]);
   const running = agents.filter(agent => agent.running).length;
-  const configured = config && configureTheme(config, values, isPond);
+  const configured = config && configureTheme(config, values, slug);
   const invalid = Object.values(drafts).some(draft => draft != null && !/^#?[\da-f]{6}$/i.test(draft));
-  const canReset = invalid || values.still || agents.length > 0 || parent !== 'OpenAI'
+  const canReset = invalid || values.still || agents.length > 0 || parent !== defaultParent
     || Object.entries(theme.defaults).some(([name, value]) => values[name] !== value);
 
   function updateValue(name, value) {
@@ -186,7 +213,7 @@ export function ThemeStudio({ slug }) {
     event.preventDefault();
     setValues(theme.defaults);
     setDrafts({});
-    setParent('OpenAI');
+    setParent(defaultParent);
     setAgents([]);
   }
 
@@ -215,7 +242,7 @@ export function ThemeStudio({ slug }) {
       <div className="studio-layout">
         <section className="studio-stage" aria-label={theme.name + ' preview'}>
           <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} />
-          {isPond && <SubagentTest parent={parent} setParent={setParent} agents={agents} running={running} spawn={spawn} finish={finish} disabled={!configured} />}
+          {hasAgents && <SubagentTest parent={parent} setParent={setParent} agents={agents} running={running} spawn={spawn} finish={finish} disabled={!configured} />}
         </section>
 
         <div className="studio-sidebar">
@@ -226,7 +253,7 @@ export function ThemeStudio({ slug }) {
             ) : (
               <form id="theme-settings" onSubmit={download} onReset={reset}>
                 <fieldset className="settings-controls" disabled={!configured}>
-                  <fieldset>
+                  {!theme.motionLabel && <fieldset>
                     <legend>Background</legend>
                     {backgrounds.map(([name, label]) => (
                       <ColorField key={name} name={name} label={label} value={values[name]} draft={drafts[name]} onSwatch={updateSwatch} onHex={updateHex} onCommit={clearDraft} />
@@ -234,7 +261,24 @@ export function ThemeStudio({ slug }) {
                     {!isPond && (
                       <RangeField name="grain-strength" label="Grain strength" value={values['grain-strength']} onChange={updateValue} disabled={!configured} />
                     )}
-                  </fieldset>
+                  </fieldset>}
+                  {slug === 'nightfall-christmas' && <>
+                    <fieldset><legend>Background</legend>
+                      {backgrounds.map(([name,label]) => <ColorField key={name} name={name} label={label} value={values[name]} draft={drafts[name]} onSwatch={updateSwatch} onHex={updateHex} onCommit={clearDraft} />)}
+                    </fieldset>
+                    <fieldset><legend>Snowfall</legend>
+                      <RangeField name="snow-intensity" label="Snowfall intensity" value={values['snow-intensity']} onChange={updateValue} />
+                      <RangeField name="snow-speed" label="Snowfall speed" min={0} max={70} value={values['snow-speed']} onChange={updateValue} />
+                      <SwitchField label="Snow on the chat box" checked={values.accumulation} onChange={v => updateValue('accumulation',v)} />
+                    </fieldset>
+                    <fieldset><legend>Decorations</legend>
+                      <RangeField name="light-brightness" label="Light glow" value={values['light-brightness']} onChange={updateValue} />
+                      <SwitchField label="Show snowmen" checked={values.snowmen} onChange={v => updateValue('snowmen',v)} />
+                    </fieldset>
+                  </>}
+                  {theme.motionLabel && (
+                    <SwitchField label={theme.motionLabel} checked={Boolean(values.still)} onChange={checked => updateValue('still', checked)} disabled={!configured} />
+                  )}
                   {isPond && (
                     <fieldset>
                       <legend>Fish movement</legend>
@@ -248,17 +292,17 @@ export function ThemeStudio({ slug }) {
                     </fieldset>
                   )}
                   <div className="studio-actions">
-                    <button className="open-theme" type="reset" disabled={isPond && !canReset}><RotateCcw size={15} aria-hidden="true" /> Reset</button>
+                    <button className="open-theme" type="reset" disabled={(hasAgents || theme.motionLabel) && !canReset}><RotateCcw size={15} aria-hidden="true" /> Reset</button>
                     <DownloadAction disabled={invalid} />
                   </div>
                 </fieldset>
               </form>
             )}
           </section>
-          {isPond && <InstallInstructions name={theme.name} />}
+          {hasAgents && <InstallInstructions name={theme.name} />}
         </div>
       </div>
-      {!isPond && <InstallInstructions name={theme.name} />}
+      {!hasAgents && <InstallInstructions name={theme.name} />}
     </main>
   );
 }

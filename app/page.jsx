@@ -17,7 +17,7 @@ export default function Collection() {
           <a className="text-link" href="#install">How to install <ArrowDown size={15} aria-hidden="true" /></a>
         </header>
         <div className="theme-grid">
-          {Object.entries(themes).map(([slug, theme]) => (
+          {['koi-pond', 'nightfall-christmas', 'blockworks', 'margin-notes', 'dark-texture'].map(slug => [slug, themes[slug]]).map(([slug, theme]) => (
             <article className="theme" aria-labelledby={slug + '-title'} key={slug}>
               <div className="theme-info">
                 <header>

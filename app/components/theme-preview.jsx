@@ -74,7 +74,10 @@ function School({ agents }) {
       <div data-slot="collapsible-panel" hidden>
         {agents.map((agent, slot) => (
           <div key={slot} data-v2-item-type="subagent" aria-description={agent.running ? 'Running' : 'Completed'}>
-            <span aria-hidden="true"><span className={agent.running ? 'bg-info' : 'bg-success'} /></span>
+            <span aria-hidden="true">
+              <span className={icons[agent.provider]} data-provider-kind={agent.provider.toLowerCase()} />
+              <span className={agent.running ? 'bg-info' : 'bg-success'} />
+            </span>
           </div>
         ))}
       </div>
@@ -82,10 +85,15 @@ function School({ agents }) {
   );
 }
 
-function PreviewConversation({ parent, agents }) {
+function PreviewConversation({ slug, parent, agents }) {
   return (
-    <div className="demo" data-workspace-area="conversation">
-      <div className="chat-canvas" data-assistant-citation-viewport="">
+    <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug}>
+      <div className="demo" data-workspace-area="conversation">
+        <div className="chat-canvas" data-assistant-citation-viewport="">
+          {agents.length > 0 && <School agents={agents} />}
+        </div>
+      </div>
+      <div className="preview-composer" data-workspace-area="composer">
         <div className="new-thread">
           <h1>New thread</h1>
           <div className="composer" data-chat-composer-main-surface="">
@@ -93,12 +101,11 @@ function PreviewConversation({ parent, agents }) {
             <div className="composer-tools" aria-hidden="true">
               <Paperclip size={14} />
               <span data-chat-provider-model-picker="" aria-label={models[parent]}>{models[parent]}</span>
-              <span className="submit"><ArrowUp size={14} /></span>
+              <span className="submit" data-chat-composer-compact-send=""><ArrowUp size={14} /></span>
             </div>
           </div>
           <div className="checkout"><GitBranch size={12} aria-hidden="true" /> main</div>
         </div>
-        {agents.length > 0 && <School agents={agents} />}
       </div>
     </div>
   );
@@ -124,7 +131,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
   }, [frame, appearance]);
 
   useEffect(() => {
-    if (slug !== 'koi-pond' || !frame) return;
+    if ((!theme.motionLabel && slug !== 'koi-pond') || !frame) return;
 
     let visible = !('IntersectionObserver' in window);
     const updatePlayback = () => frame.documentElement.toggleAttribute('data-paused', !visible || document.hidden);
@@ -140,7 +147,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
       observer?.disconnect();
       document.removeEventListener('visibilitychange', updatePlayback);
     };
-  }, [frame, slug]);
+  }, [frame, slug, theme.motionLabel]);
 
   return (
     <div className="preview" data-theme={slug} data-preview-appearance={appearance} aria-busy={!ready && !error} ref={preview}>
@@ -170,7 +177,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         `}</style>,
         frame.head,
       )}
-      {ready && createPortal(<PreviewConversation parent={parent} agents={agents} />, frame.body)}
+      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} />, frame.body)}
     </div>
   );
 }
@@ -178,5 +185,5 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
 export function GalleryPreview({ slug }) {
   const { config, error } = useTheme(slug);
   const [appearance, setAppearance] = useState(themes[slug].appearance || 'dark');
-  return <ThemePreview slug={slug} config={config} error={error} appearance={appearance} onAppearanceChange={setAppearance} />;
+  return <ThemePreview slug={slug} config={config} error={error} appearance={appearance} onAppearanceChange={setAppearance} parent={themes[slug].previewProvider} />;
 }

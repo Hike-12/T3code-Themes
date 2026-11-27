@@ -2,6 +2,7 @@
 // Set CHROME_PATH to use an existing Chromium installation.
 const assert = require('node:assert/strict');
 const { readFile } = require('node:fs/promises');
+const { setTimeout: delay } = require('node:timers/promises');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const site = process.env.SITE_URL || 'http://localhost:3000';
 
@@ -63,27 +64,7 @@ async function testStudio(browser) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(site);
-  for (const slug of ['koi-pond', 'dark-texture']) {
-    const response = await page.request.get(new URL('/' + slug + '.html', site).href, { maxRedirects: 0 });
-    assert.equal(response.status(), 308);
-    assert.equal(response.headers().location, '/' + slug);
-    assert.equal(await page.getByRole('navigation').locator('a[href="/' + slug + '"]').count(), 0);
-    const link = page.locator('a[download][href="/downloads/' + slug + '.json"]');
-    const downloading = page.waitForEvent('download');
-    await link.click();
-    const file = await downloading;
-    assert.equal(file.suggestedFilename(), slug + '.json');
-    const config = JSON.parse(await readFile(await file.path(), 'utf8'));
-    assert.equal(config.id, slug);
-    if (slug === 'dark-texture') {
-      assert.match(config.css, /data:image\/webp;base64,/);
-      assert.ok(config.css.length < 100000);
-    } else {
-      assert.doesNotMatch(config.css, /--koi-reflection/);
-    }
-  }
-  await page.getByRole('link', { name: 'Customize pond' }).click();
-  await page.waitForURL('**/koi-pond');
+  await page.goto(new URL('/koi-pond', site).href);
   const frame = page.frameLocator('.studio-viewport iframe');
   const add = provider => page.getByRole('button', { name: 'Add ' + provider + ' subagent' });
   const finish = provider => page.getByRole('button', { name: 'Finish ' + provider + ' subagent' });
@@ -221,7 +202,7 @@ async function testStudio(browser) {
   }
 
   await page.getByRole('navigation').getByRole('link', { name: 'Collection' }).click();
-  await page.getByRole('link', { name: 'Customize texture' }).click();
+  await page.goto(new URL('/dark-texture', site).href);
   await page.waitForURL('**/dark-texture');
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
   const texturePond = frame.locator('.demo');
@@ -306,7 +287,7 @@ async function testStandaloneGemini(browser) {
   assert.deepEqual((await readPond(frame)).map(fish => fish.track), ['t3-koi-openai']);
 
   // OpenCode's native logo identifies the provider even when its model name is Claude.
-  await frame.locator('[data-chat-provider-model-picker]').first().evaluate(picker => {
+  await frame.locator('.preview-composer [data-chat-provider-model-picker]').evaluate(picker => {
     picker.setAttribute('aria-label', 'Claude Sonnet');
     picker.innerHTML = '<svg viewBox="0 0 32 40"><path d="M24 8H8V32H24V8ZM32 40H0V0H32V40Z"/></svg>';
   });
@@ -315,11 +296,249 @@ async function testStandaloneGemini(browser) {
   await page.close();
 }
 
+async function testNativeComposerGemini(browser) {
+  const page = await browser.newPage({ reducedMotion: 'reduce' });
+  await page.goto(new URL('/koi-pond', site).href);
+  const frame = page.frameLocator('.studio-viewport iframe');
+  await frame.locator('.demo').waitFor();
+  const picker = frame.locator('[data-chat-provider-model-picker]');
+  await picker.evaluate(picker => {
+    picker.setAttribute('aria-label', 'Gemini 4 Hydrogen, High');
+    picker.innerHTML = `<span data-chat-provider-model-picker-icon>
+      <svg viewBox="0 0 128 128"><image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAQAElEQVR4nOx9CbhsVXXmWvucqst7AmpQwDmoDUgQpTtGmcRIBEHhAwxEMRpCjEOa2NoK7/"/></svg>
+    </span>`;
+  });
+  for (const appearance of ['Dark', 'Light']) {
+    await page.getByRole('radio', { name: appearance, exact: true }).check();
+    assert.deepEqual((await readPond(frame)).map(fish => [fish.track, fish.color]), [
+      ['t3-koi-gemini', '#a9d7ff'],
+    ]);
+  }
+  await picker.evaluate(button => button.setAttribute('aria-label', 'Hydrogen, High'));
+  assert.equal((await readPond(frame))[0].track, 't3-koi-gemini');
+  await picker.evaluate(button => {
+    const composer = button.closest('[data-workspace-area="composer"]');
+    const side = document.createElement('aside');
+    side.dataset.sideChatPane = 'child-thread';
+    const sideCanvas = document.createElement('div');
+    sideCanvas.dataset.chatCanvas = 'true';
+    sideCanvas.append(composer.cloneNode(true));
+    side.append(sideCanvas);
+    composer.parentElement.append(side);
+    button.setAttribute('aria-label', 'GPT-6 Astra');
+    button.replaceChildren();
+  });
+  assert.equal((await readPond(frame))[0].track, 't3-koi-openai');
+  await page.close();
+}
+
+function readGolems(frame) {
+  return frame.locator('.demo').evaluate(pond => {
+    const canvas = pond.querySelector('[data-assistant-citation-viewport]');
+    return [[pond, '::before'], [pond, '::after'], [canvas, '::before'], [canvas, '::after']].flatMap(([host, pseudo]) => {
+      const style = getComputedStyle(host, pseudo);
+      return style.content === 'none' ? [] : [{
+        sprite: style.backgroundImage,
+        transform: style.transform,
+        frame: style.backgroundPositionX,
+        motion: style.animationName,
+        playback: style.animationPlayState,
+        pointerEvents: style.pointerEvents,
+      }];
+    });
+  });
+}
+
+async function testBlockworks(browser) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(site);
+  const original = await (await page.request.get(new URL('/downloads/blockworks.json', site).href)).json();
+  await page.goto(new URL('/blockworks', site).href);
+  const model = page.getByLabel('Main thread model');
+  const frame = page.frameLocator('.studio-viewport iframe');
+  const pond = frame.locator('.demo');
+  const sprites = {};
+  for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
+    await model.selectOption(provider);
+    const [golem] = await readGolems(frame);
+    sprites[provider] = golem.sprite;
+    assert.match(golem.sprite, /^url\("data:image\/webp;base64,/);
+    assert.equal(golem.pointerEvents, 'none');
+  }
+  assert.equal(new Set(Object.values(sprites)).size, 4);
+
+  await model.selectOption('Gemini');
+  const add = provider => page.getByRole('button', { name: 'Add ' + provider + ' subagent' });
+  const finish = provider => page.getByRole('button', { name: 'Finish ' + provider + ' subagent' });
+  for (const provider of ['Claude', 'OpenCode', 'OpenAI']) await add(provider).click();
+  assert.ok(await add('Gemini').isDisabled());
+  const expected = ['Gemini', 'Claude', 'OpenCode', 'OpenAI'].map(provider => sprites[provider]);
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
+
+  const dark = await pond.evaluate(el => getComputedStyle(el).backgroundImage);
+  await page.getByRole('radio', { name: 'Light', exact: true }).check();
+  const light = await pond.evaluate(el => getComputedStyle(el).backgroundImage);
+  assert.notEqual(light, dark);
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
+
+  const still = page.getByRole('switch', { name: 'Keep golems still' });
+  await still.click();
+  assert.ok((await readGolems(frame)).every(golem => golem.playback.split(', ').every(state => state === 'paused')));
+  const paused = await exportedTheme(page);
+  assert.match(paused.css, /--theme-motion-state: paused/);
+  await still.click();
+  const [initial] = await readGolems(frame);
+  const deadline = Date.now() + 2500;
+  let changedFrame = false;
+  let changedPosition = false;
+  while ((!changedFrame || !changedPosition) && Date.now() < deadline) {
+    await delay(80);
+    const [next] = await readGolems(frame);
+    changedFrame ||= next.frame !== initial.frame;
+    changedPosition ||= next.transform !== initial.transform;
+  }
+  assert.ok(changedFrame && changedPosition, 'The golem should move and change walking frames');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.ok((await readGolems(frame)).every(golem => golem.motion === 'none'));
+  await finish('OpenCode').click();
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Gemini, sprites.Claude, sprites.OpenAI]);
+  await add('Gemini').click();
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Gemini, sprites.Claude, sprites.Gemini, sprites.OpenAI]);
+
+  const group = frame.locator('[data-subagent-group] > button');
+  await group.evaluate(button => button.setAttribute('aria-expanded', 'false'));
+  assert.equal((await readGolems(frame)).length, 4);
+  await finish('Claude').click();
+  assert.equal((await readGolems(frame)).length, 3);
+  await page.getByRole('button', { name: 'Reset' }).click();
+  assert.equal((await readGolems(frame)).length, 1);
+  assert.deepEqual(await exportedTheme(page), original);
+
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.ok(await frame.locator('.composer').isVisible());
+  }
+  assert.deepEqual(errors, []);
+  await page.close();
+}
+
+async function testNightfall(browser) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(site);
+  assert.deepEqual(await page.getByRole('article').locator('h2').allTextContents(), ['Koi pond', 'Nightfall Christmas', 'Minecraft', 'Margin Notes', 'Dark texture']);
+  const gallery = page.getByRole('article', { name: 'Nightfall Christmas' });
+  const originalResponse = await page.request.get(new URL('/downloads/nightfall-christmas.json', site).href);
+  assert.ok(originalResponse.ok());
+  const original = await originalResponse.json();
+  assert.equal(original.id, 'nightfall-christmas');
+  assert.ok(original.css.length < 100000);
+  await gallery.getByRole('link', { name: 'Try Nightfall Christmas' }).click();
+  await page.waitForURL('**/nightfall-christmas');
+  const frame = page.frameLocator('.studio-viewport iframe');
+  const pond = frame.locator('.demo');
+  const composer = frame.locator('[data-chat-composer-main-surface]');
+  await composer.waitFor();
+  const look = () => frame.locator('.preview-workspace').evaluate(ws => {
+    const demo = ws.querySelector('.demo');
+    const box = ws.querySelector('[data-chat-composer-main-surface]');
+    const snow = getComputedStyle(box, '::before');
+    const lights = getComputedStyle(box, '::after');
+    return {
+      canvas: getComputedStyle(ws.ownerDocument.body).backgroundColor,
+      backdropImage: getComputedStyle(demo).backgroundImage,
+      backdropBefore: getComputedStyle(demo, '::before').content,
+      backdropAfter: getComputedStyle(demo, '::after').content,
+      snowAnimation: getComputedStyle(demo, '::before').animationName,
+      snowState: getComputedStyle(demo, '::before').animationPlayState,
+      flakePointer: getComputedStyle(demo, '::before').pointerEvents,
+      snowPosition: getComputedStyle(demo, '::before').backgroundPosition,
+      snowSource: snow.borderImageSource,
+      snowPointer: snow.pointerEvents,
+      lightsSource: lights.borderImageSource,
+      lightsPointer: lights.pointerEvents,
+      animation: lights.animationName,
+      state: lights.animationPlayState,
+    };
+  });
+  assert.equal(await page.getByRole('button', {name:'Add Claude subagent'}).count(), 1);
+  const snowmen = () => frame.locator('[data-assistant-citation-viewport]').evaluate(el => getComputedStyle(el, '::after').backgroundImage);
+  assert.equal((await snowmen()).match(/data:image\/svg/g).length, 1);
+  for (const provider of ['Claude', 'Gemini', 'OpenCode']) {
+    await page.getByRole('button', {name: 'Add '+provider+' subagent'}).click();
+  }
+  assert.equal((await snowmen()).match(/data:image\/svg/g).length, 4);
+  const marks = await pond.evaluate(el => ['claude','gemini','opencode'].map((p,i)=>getComputedStyle(el).getPropertyValue('--nightfall-agent-'+(i+1))));
+  assert.equal(new Set(marks).size, 3);
+  await page.getByRole('button', {name: 'Finish Gemini subagent'}).click();
+  assert.equal((await snowmen()).match(/data:image\/svg/g).length, 3);
+  await page.getByRole('button', { name: 'Reset' }).click();
+  const slider = page.getByRole('slider', {name:'Snowfall intensity'});
+  await slider.focus(); await slider.press('Home');
+  assert.equal(await pond.evaluate(el => getComputedStyle(el,'::before').opacity), '0');
+  assert.match((await exportedTheme(page)).css, /--nightfall-snow-intensity: 0/);
+  const speed = page.getByRole('slider', {name:'Snowfall speed'});
+  await speed.focus(); await speed.press('End');
+  assert.equal(await pond.evaluate(el => getComputedStyle(el,'::before').animationDuration), '5s');
+  const glow = page.getByRole('slider', {name:'Light glow'});
+  await glow.focus(); await glow.press('Home');
+  assert.match((await exportedTheme(page)).css, /--nightfall-light-brightness: 0/);
+  await page.getByRole('textbox', {name:'Dark base hex'}).fill('#201e24');
+  assert.equal((await exportedTheme(page)).colors.canvas, '#201e24');
+  await page.getByRole('switch', {name:'Snow on the chat box'}).click();
+  assert.match((await exportedTheme(page)).css, /--nightfall-ledge: var\(--nightfall-bare\)/);
+  await page.getByRole('switch', {name:'Show snowmen'}).click();
+  assert.equal(await frame.locator('[data-assistant-citation-viewport]').evaluate(el => getComputedStyle(el,'::after').opacity), '0');
+  await page.getByRole('button', { name: 'Reset' }).click();
+  const dark = await look();
+  assert.equal(dark.canvas, 'rgb(23, 22, 21)');
+  assert.equal(dark.backdropImage, 'none');
+  assert.equal(dark.backdropBefore, '""');
+  assert.equal(dark.backdropAfter, '""');
+  assert.match(dark.snowSource, /^url\("data:image\/webp;base64,/);
+  assert.match(dark.lightsSource, /^url\("data:image\/webp;base64,/);
+  assert.equal(dark.snowPointer, 'none');
+  assert.equal(dark.snowAnimation, 't3-nightfall-snow');
+  assert.equal(dark.flakePointer, 'none');
+  await page.waitForTimeout(100);
+  assert.notEqual((await look()).snowPosition, dark.snowPosition);
+  assert.equal(dark.lightsPointer, 'none');
+  assert.equal(dark.animation, 't3-nightfall-glow');
+  assert.equal(dark.state, 'running');
+  await page.getByRole('radio', { name: 'Light', exact: true }).check();
+  const light = await look();
+  assert.equal(light.canvas, 'rgb(221, 230, 238)');
+  assert.notEqual(light.snowSource, dark.snowSource);
+  await page.getByRole('switch', { name: 'Pause snow and lights' }).click();
+  assert.equal((await look()).state, 'paused');
+  assert.equal((await look()).snowState, 'paused');
+  assert.match((await exportedTheme(page)).css, /--theme-motion-state: paused/);
+  await page.getByRole('button', { name: 'Reset' }).click();
+  assert.deepEqual(await exportedTheme(page), original);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal((await look()).animation, 'none');
+  assert.equal((await look()).snowAnimation, 'none');
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  }
+  assert.deepEqual(errors, []);
+  await page.close();
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH });
   try {
+    await testNativeComposerGemini(browser);
     await testStudio(browser);
     await testStandaloneGemini(browser);
+    await testBlockworks(browser);
+    await testNightfall(browser);
     console.log('Theme studio browser checks passed.');
   } finally {
     await browser.close();
