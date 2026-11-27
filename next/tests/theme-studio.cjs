@@ -387,6 +387,11 @@ async function testBlockworks(browser) {
   await activity.selectOption('Coding');
   assert.equal((await look()).animation, 'minecraft-working');
   assert.equal((await look()).position, '100%');
+  const rail = frame.locator('.preview-rail');
+  const studioCard = rail.locator('[aria-current="page"]');
+  await rail.waitFor();
+  assert.equal(await rail.evaluate(el => getComputedStyle(el).backdropFilter), 'blur(16px) saturate(1.25)');
+  assert.equal(await studioCard.evaluate(el => getComputedStyle(el).animationName), 'minecraft-enchantment');
   const gear = async (modelName, expected) => {
     await model.selectOption(modelName);
     assert.equal(await dock.evaluate((el, property) =>
@@ -412,6 +417,7 @@ async function testBlockworks(browser) {
   await still.click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal((await look()).animation, 'none');
+  assert.equal(await studioCard.evaluate(el => getComputedStyle(el).animationName), 'none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.getByRole('radio', { name: 'Light', exact: true }).check();

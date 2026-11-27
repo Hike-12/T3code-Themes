@@ -3,7 +3,8 @@ from base64 import b64encode
 from io import BytesIO
 from pathlib import Path
 import json
-from PIL import Image, ImageChops, ImageColor, ImageDraw
+from math import sin, tau
+from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = Path(__file__).with_name('assets') / 'minecraft'
@@ -16,94 +17,168 @@ def sprite_url(image):
     image.save(out, 'PNG', optimize=True)
     return data_url(out.getvalue(), 'image/png')
 
+SPRITE_SIZE = 32
+OUTLINE = '#090a0c'
+
+# Each cuboid has a lit top, a face, and a darker right plane.
+def voxel(draw, bounds, colors, depth=3):
+    x, y, right, bottom = bounds
+    top, front, side = colors
+    draw.polygon([(x, y), (x+depth, y-depth), (right+depth, y-depth), (right, y)], fill=top)
+    draw.polygon([(right, y), (right+depth, y-depth), (right+depth, bottom-depth), (right, bottom)], fill=side)
+    draw.rectangle(bounds, fill=front)
+    draw.line((x, y, right, y), fill=top)
+
+def outlined(image):
+    edge = Image.new('RGBA', image.size, OUTLINE)
+    edge.putalpha(image.getchannel('A').filter(ImageFilter.MaxFilter(3)))
+    edge.alpha_composite(image)
+    return edge
+
+def held_gear(tier):
+    tool = Image.new('RGBA', (SPRITE_SIZE, SPRITE_SIZE))
+    draw = ImageDraw.Draw(tool)
+    if tier == 'heavy':
+        draw.line([(23, 28), (27, 22)], fill='#8569a1', width=2)
+        draw.polygon([(24, 23), (27, 17), (30, 16), (30, 20), (27, 24)], fill='#483754')
+        draw.line([(27, 22), (29, 18)], fill='#b694e9', width=2)
+        draw.line([(22, 22), (26, 25)], fill='#756091')
+        draw.point((29, 17), fill='#ecb8fc')
+    else:
+        draw.line([(23, 28), (27, 20)], fill='#ad774d', width=2)
+        draw.line([(24, 27), (26, 23)], fill='#deb285')
+        head, edge = ('#a5a095', '#706d65') if tier == 'fast' else ('#76e5e1', '#209ba9')
+        draw.polygon([(22, 19), (24, 17), (28, 17), (30, 19), (30, 22), (28, 21), (27, 19)], fill=head)
+        draw.line([(25, 18), (28, 19), (29, 21)], fill=edge)
+    return outlined(tool)
+
+PALETTES = {
+    'openai': ('#eef2f8', '#cbd5e1', '#64748b'),
+    'claude': ('#ffc395', '#c77c52', '#8e4b36'),
+    'gemini': ('#7dd3fc', '#38bdf8', '#0284c7'),
+    'opencode': ('#303039', '#13131a', '#201c2b'),
+    'creeper': ('#68d965', '#46b543', '#338c31'),
+    'fox': ('#ffad69', '#ff7a1a', '#d95b00'),
+}
+
 def mini_mob(key, tier):
-    # Three 16px frames use the same silhouette and change the eyes and pose.
-    colors = {
-        'openai': ('#d6cec0', '#a39b89', '#738856', '#643e36'),
-        'claude': ('#d58c62', '#9e593e', '#f0ae76', '#492b26'),
-        'gemini': ('#73dbeb', '#3398bd', '#bff2f1', '#285780'),
-        'opencode': ('#584b61', '#392f40', '#756080', '#f0a3fb'),
-        'creeper': ('#78ad59', '#49763c', '#a1cb72', '#24331d'),
-        'fox': ('#d88e50', '#a25335', '#f6e4c6', '#392520'),
-    }
-    body, shade, detail, eyes = colors[key]
-    sheet = Image.new('RGBA', (48, 16))
+    colors = PALETTES[key]
+    sheet = Image.new('RGBA', (SPRITE_SIZE * 3, SPRITE_SIZE))
     for stage in range(3):
-        frame = Image.new('RGBA', (16, 16))
+        frame = Image.new('RGBA', (SPRITE_SIZE, SPRITE_SIZE))
         draw = ImageDraw.Draw(frame)
         if key == 'gemini':
-            draw.rectangle((0, 6 if stage != 2 else 4, 15, 8), fill=detail)
-            draw.rectangle((6, 8, 9, 13), fill=shade)
-            draw.rectangle((4, 3, 11, 10), fill=body)
-        elif key == 'creeper':
-            draw.rectangle((5, 8, 10, 13), fill=shade)
-            draw.rectangle((4, 12, 6, 14), fill=body)
-            draw.rectangle((9, 12, 11, 14), fill=body)
-            draw.rectangle((3, 2, 12, 10), fill=body)
-            draw.rectangle((4, 3, 5, 4), fill=detail)
-            draw.rectangle((7, 7, 8, 9), fill=eyes)
+            wing_tip = 14 - 2 * stage
+            draw.polygon([(9, 21), (2, wing_tip), (2, 21), (7, 25)], fill=(130, 223, 255, 165))
+            draw.polygon([(20, 21), (28, wing_tip), (28, 21), (23, 25)], fill=(130, 223, 255, 165))
+            draw.line([(2, wing_tip + 2), (7, 21)], fill=(209, 245, 255, 205))
+            draw.line([(27, wing_tip + 2), (22, 21)], fill=(209, 245, 255, 205))
+            voxel(draw, (10, 19, 18, 27), colors, 2)
+            voxel(draw, (9, 4, 19, 19), colors)
+            draw.rectangle((12, 2, 15, 5), fill=colors[0])
+            draw.rectangle((11, 10, 12, 14-stage%2), fill='#15273d')
+            draw.rectangle((16, 10, 17, 14-stage%2), fill='#15273d')
+            draw.point((13, 16), fill='#dcf7ff')
+            draw.point((14, 16), fill='#dcf7ff')
         elif key == 'fox':
-            draw.rectangle((4, 2, 6, 6), fill=shade)
-            draw.rectangle((9, 2, 11, 6), fill=shade)
-            draw.rectangle((4, 5, 11, 11), fill=body)
-            draw.rectangle((5, 9, 10, 12), fill=detail)
-            draw.point((8, 10), fill=eyes)
+            voxel(draw, (9, 20, 20, 27), colors)
+            draw.polygon([(8, 26), (5, 25), (3, 21), (6, 20), (11, 24)], fill=colors[2])
+            draw.rectangle((3, 21, 5, 22), fill='#f8fafc')
+            for x in (8, 18):
+                draw.rectangle((x, 26, x+3, 29), fill='#3d2832')
+            voxel(draw, (7, 8, 20, 21), colors)
+            for x in (7, 18):
+                draw.polygon([(x, 10), (x, 4), (x+2, 2), (x+5, 9)], fill=colors[1])
+                draw.line((x+1, 5, x+2, 3), fill='#442330', width=2)
+                draw.polygon([(x+1, 9), (x+2, 6), (x+3, 9)], fill='#ffc59c')
+            draw.polygon([(7, 15), (11, 17), (16, 17), (20, 15), (20, 21),
+                          (17, 23), (12, 23), (9, 21)], fill='#f8fafc')
+            draw.rectangle((12, 18, 16, 19), fill='#e5d1c8')
+            draw.rectangle((13, 20, 15, 21), fill='#321c29')
+            for x in (10, 17):
+                draw.rectangle((x, 12, x+1, 14-stage%2), fill=OUTLINE)
+        elif key == 'creeper':
+            voxel(draw, (10, 18, 18, 27), colors)
+            for x, y in ((8, 25), (19, 25), (10, 27), (16, 27)):
+                voxel(draw, (x, y, x+2, y+2), colors, 1)
+            voxel(draw, (6, 5, 20, 20), colors, 4)
+            for x, y, length in ((7, 7, 2), (16, 7, 2), (8, 15, 2), (18, 15, 2), (7, 18, 3), (17, 19, 2), (13, 24, 2)):
+                draw.line((x, y, x+length-1, y), fill=colors[0] if (x+y)%2 else colors[2])
+            draw.rectangle((8, 10, 11, 13-stage%2), fill='#111914')
+            draw.rectangle((15, 10, 18, 13-stage%2), fill='#111914')
+            draw.polygon([(12, 13), (14, 13), (14, 15), (16, 15), (16, 18),
+                          (14, 18), (14, 16), (12, 16), (12, 18), (10, 18), (10, 15), (12, 15)], fill='#111914')
+        elif key == 'opencode':
+            for x in (10, 16):
+                voxel(draw, (x, 24, x+2, 29), colors, 1)
+            for x in (6, 20):
+                voxel(draw, (x, 17, x+2, 27), colors, 1)
+            voxel(draw, (10, 17, 18, 25), colors, 2)
+            voxel(draw, (7, 5, 20, 18), colors, 4)
+            for x in (9, 15):
+                draw.rectangle((x, 11, x+3, 12), fill='#cc00fa')
+                draw.point((x+1, 11+(stage==1)), fill='#f59eff')
+            for pos in ((3, 8), (24, 9), (4, 20-(stage==1))):
+                draw.point(pos, fill='#a65cdb')
         else:
-            draw.rectangle((4, 9, 11, 12), fill=shade)
-            draw.rectangle((3, 7, 4, 12 - (stage == 2)), fill=shade)
-            draw.rectangle((11, 7, 12, 12 + (stage == 2)), fill=shade)
-            draw.rectangle((5, 12, 6, 14), fill=shade)
-            draw.rectangle((9, 12, 10, 14 - (stage == 2)), fill=shade)
-            draw.rectangle((4, 2, 11, 9), fill=body)
-            if key == 'opencode':
-                draw.rectangle((3, 2, 12, 8), fill=body)
-            elif key == 'claude':
-                draw.rectangle((7, 0, 8, 2), fill=detail)
-                draw.rectangle((7, 7, 8, 10), fill=detail)
+            for x in (9, 16):
+                voxel(draw, (x, 25, x+4, 29), colors, 2)
+            voxel(draw, (7, 17, 21, 26), colors)
+            for x in (4, 21):
+                voxel(draw, (x, 18, x+3, 26), colors, 2)
+            voxel(draw, (8, 5, 19, 18), colors, 4)
+            draw.line((9, 10, 18, 10), fill=colors[2], width=2)
+            for x in (10, 16):
+                draw.rectangle((x, 11, x+1, 13-stage%2), fill='#713c32')
+            draw.rectangle((13, 12, 15, 17), fill=colors[0])
+            draw.line((13, 17, 16, 17), fill=colors[2])
+            if key == 'openai':
+                draw.line([(8, 19), (11, 20), (11, 23), (15, 24), (15, 25)], fill='#4d7c0f', width=2)
+                draw.point((9, 19), fill='#a3bc62')
+                draw.point((13, 23), fill='#65a30d')
+                if stage == 0:
+                    draw.line((24, 27, 25, 22), fill='#65a30d', width=2)
+                    draw.rectangle((24, 20, 26, 22), fill='#ef4444')
+                    draw.point((25, 20), fill='#ff9c83')
             else:
-                draw.rectangle((4, 3, 5, 4), fill=detail)
-                draw.rectangle((7, 6, 8, 9), fill=shade)
-        eye_y = 6 + (stage == 1)
+                draw.rectangle((13, 2, 15, 5), fill=colors[0])
+                draw.rectangle((11, 20, 16, 23), fill='#886955')
+                draw.line((11, 21, 16, 21), fill='#c2bc87')
+                draw.point((15, 23), fill='#65a78c')
+        base = Image.new('RGBA', frame.size)
+        ImageDraw.Draw(base).ellipse((4, 29, 25, 31), fill=(7, 8, 10, 115))
+        base.alpha_composite(outlined(frame))
         if stage == 2:
-            if tier == 'heavy':
-                draw.line((11, 14, 15, 7), fill='#292237', width=2)
-                draw.line((12, 12, 15, 7), fill='#a481da')
-                draw.line((11, 10, 14, 12), fill='#c4a0ec')
-                draw.point((15, 6), fill='#e6baff')
-            else:
-                draw.line((12, 14, 15, 9), fill='#b9845d')
-                draw.line((13, 8, 15, 9), fill='#b7a394' if tier == 'fast' else '#6acfe8')
-                draw.point((15, 10), fill='#837568' if tier == 'fast' else '#47a9b7')
-        for x in (5, 9):
-            draw.rectangle((x, eye_y - (stage == 2), x + 1, eye_y), fill=eyes)
-        # Offset the silhouette by one source pixel to shade the right and bottom faces.
-        mask = frame.getchannel('A')
-        depth = Image.new('L', frame.size)
-        depth.paste(mask, (1, 1))
-        voxel = Image.new('RGBA', frame.size, '#0e1013')
-        voxel.putalpha(ImageChops.subtract(depth, mask))
-        voxel.alpha_composite(frame)
-        sheet.paste(voxel, (stage * 16, 0))
+            base.alpha_composite(held_gear(tier))
+        sheet.paste(base, (stage * SPRITE_SIZE, 0))
     return sheet
 
 
-mobs = ('openai', 'claude', 'gemini', 'opencode', 'creeper', 'fox')
 assets = {
     mob + suffix: sprite_url(mini_mob(mob, tier))
-    for mob in mobs
+    for mob in PALETTES
     for tier, suffix in [('standard', ''), ('fast', '-fast'), ('heavy', '-heavy')]
 }
 
-stone = Image.new('RGB', (16, 16), '#121417')
-draw = ImageDraw.Draw(stone)
-# Stepped seams wrap across the tile edges. Short broken highlights suggest stone strata.
-draw.line([(0, 3), (4, 3), (4, 4), (9, 4), (9, 2), (13, 2), (13, 3), (15, 3)], fill='#0e1013')
-draw.line([(0, 11), (3, 11), (3, 9), (8, 9), (8, 10), (12, 10), (12, 11), (15, 11)], fill='#0e1013')
-for box in [(0, 5, 3, 7), (5, 5, 8, 6), (10, 3, 12, 6), (13, 5, 15, 7),
-            (0, 12, 3, 13), (4, 10, 7, 13), (9, 11, 11, 13), (13, 12, 15, 13), (6, 0, 10, 1)]:
-    draw.rectangle(box, fill='#171a1f')
-for x, y, length in [(1, 5, 2), (5, 5, 2), (10, 3, 2), (14, 6, 1), (0, 13, 1), (5, 10, 2), (10, 12, 1), (14, 12, 1), (7, 0, 2)]:
-    draw.line((x, y, x + length, y), fill='#1d2026')
+# The strata and diagonal grain both wrap on a 32-pixel period.
+stone = Image.new('RGB', (32, 32))
+strata = [ImageColor.getrgb(color) for color in ('#0e1014', '#13161c', '#181c24', '#1f242e')]
+for y in range(32):
+    for x in range(32):
+        bend = 1.5 * sin(tau*(x+2*y)/32) + 0.9 * sin(tau*(2*x-y)/32)
+        ridge = int((y + bend + 32) % 32)
+        cut = (x + 5*(ridge//8)) % 32
+        layer = 1
+        if ridge in (2, 11, 19, 28) and not 22 <= cut <= 26:
+            layer = 0
+        elif ridge in (3, 4, 12, 20, 21, 29) and not 10 <= cut <= 13:
+            layer = 2
+        grain = (x + 3*y + (x//4)*2) % 32
+        if grain in (6, 7) and layer == 2 and cut < 18:
+            layer = 3
+        elif grain in (14, 15, 16) and layer == 1:
+            layer = 2
+        stone.putpixel((x, y), strata[layer])
 assets['deepslate'] = sprite_url(stone)
 
 glints = Image.new('RGBA', (24, 18))

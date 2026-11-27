@@ -19,7 +19,8 @@ async function run(browser) {
     </style><aside data-slot="sidebar">
       <button data-sidebar-row="shelf:working">Working</button>
       <button data-sidebar-row="shelf:settled">Settled</button>
-      <div data-thread-item hidden><button data-sidebar-row="thread:2">Another thread<span class="text-info-foreground"><svg></svg>Working 37s</span></button></div>
+      <div data-thread-item id="background-thread" hidden><button data-sidebar-row="thread:2">Another thread<span class="text-info-foreground"><svg></svg>Working 37s</span></button></div>
+      <div data-thread-item><button data-sidebar-row="thread:current" aria-current="page">Review diff<span class="text-info-foreground"><svg></svg>Working 37s</span></button></div>
     </aside>
     <main data-chat-canvas>
       <header data-chat-header><button aria-label="Open in VS Code"><svg><path /></svg></button>
@@ -55,22 +56,46 @@ async function run(browser) {
     return markup;
   });
   assert.equal((await buddy()).size, '64px');
-  assert.equal((await buddy()).particles, 'none');
+  assert.equal((await buddy()).particles, 'none, none');
   assert.equal((await buddy()).dockRadius, '2px');
   assert.equal((await buddy()).motion, 'minecraft-idle');
   assert.equal((await buddy()).pointerEvents, 'none');
-  assert.equal(await dock.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(20, 22, 26)');
+  assert.equal(await dock.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(15, 17, 23, 0.86)');
+  assert.equal(await dock.evaluate(el => getComputedStyle(el).backdropFilter), 'blur(12px)');
   assert.equal(await dock.evaluate(el => getComputedStyle(el).borderTopWidth), '2px');
   assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundImage ===
     getComputedStyle(document.documentElement).getPropertyValue('--mc-claude').trim()), true);
-  for (const surface of ['[data-workspace-area="conversation"]', '[data-slot="sidebar"]']) {
+  for (const surface of ['[data-workspace-area="conversation"]', 'body']) {
     const tile = await page.locator(surface).evaluate(el => {
       const style = getComputedStyle(el);
       return { image: style.backgroundImage, size: style.backgroundSize };
     });
     assert.match(tile.image, /data:image\/png;base64/);
-    assert.equal(tile.size, '64px 64px');
+    assert.equal(tile.size, '96px 96px');
   }
+  assert.equal(await page.locator('[data-slot="sidebar"]').evaluate(el => getComputedStyle(el).backdropFilter), 'blur(16px) saturate(1.25)');
+  const currentThread = page.locator('[data-sidebar-row="thread:current"]');
+  assert.equal(await currentThread.evaluate(el => getComputedStyle(el).animationName), 'minecraft-enchantment');
+  await page.evaluate(async () => {
+    const css = getComputedStyle(document.documentElement);
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 32;
+    const context = canvas.getContext('2d');
+    for (const name of ['openai', 'claude', 'gemini', 'opencode', 'creeper', 'fox', 'deepslate']) {
+      const raw = css.getPropertyValue('--mc-' + name).trim();
+      const image = new Image();
+      image.src = raw.slice(5, -2);
+      await image.decode();
+      if (image.width !== (name === 'deepslate' ? 32 : 96) || image.height !== 32) throw new Error('Wrong pixel grid: ' + name);
+      if (name === 'deepslate') continue;
+      context.clearRect(0, 0, 96, 32);
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, 32, 32);
+      if (!Array.from({ length: data.length / 4 }, (_, i) => 4 * i).some(i =>
+        data[i] === 9 && data[i + 1] === 10 && data[i + 2] === 12 && data[i + 3] === 255)) throw new Error('Missing silhouette: ' + name);
+    }
+  });
   assert.equal(await page.getByRole('button', { name: 'Working', exact: true }).evaluate(el =>
     getComputedStyle(el).fontFamily.includes('Minecraft UI')), true);
   assert.equal(await page.evaluate(async () => {
@@ -95,6 +120,7 @@ async function run(browser) {
   assert.equal((await buddy()).pose, '100%');
   assert.equal((await buddy()).motion, 'minecraft-working');
   assert.match((await buddy()).particles, /data:image\/png;base64/);
+  assert.match((await buddy()).particles, /linear-gradient/);
   assert.equal((await buddy()).badge, '"◆"');
   assert.equal(await page.locator('#stop').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(217, 43, 43)');
   const picker = page.locator('[data-chat-provider-model-picker]');
@@ -137,11 +163,12 @@ async function run(browser) {
   await dock.evaluate(el => { el.insertAdjacentHTML('beforebegin', '<div data-thread-now-line role="alert"><span><svg class="text-warning-foreground"></svg></span>Agent not responding to Stop</div>'); });
   assert.equal((await buddy()).motion, 'minecraft-hurt');
   await page.locator('[data-thread-now-line]').evaluate(el => el.remove());
-  await page.locator('[data-thread-item]').evaluate(el => { el.hidden = false; });
+  await page.locator('#background-thread').evaluate(el => { el.hidden = false; });
   assert.equal((await buddy()).badge, '"z"');
-  assert.equal(await page.locator('[data-thread-item] .text-info-foreground').evaluate(el => getComputedStyle(el).color), 'rgb(128, 255, 32)');
+  assert.equal(await page.locator('#background-thread .text-info-foreground').evaluate(el => getComputedStyle(el).color), 'rgb(128, 255, 32)');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal((await buddy()).motion, 'none');
+  assert.equal(await currentThread.evaluate(el => getComputedStyle(el).animationName), 'none');
 
   for (const width of [320, 640, 1440]) {
     await page.setViewportSize({ width, height: 600 });

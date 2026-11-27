@@ -93,6 +93,15 @@ function PreviewConversation({ slug, parent, agents, conversation, activity, mob
   return (
     <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug} data-preview-conversation={conversation || undefined}
       data-mc-activity={isMinecraft ? activity : undefined}>
+      {isMinecraft && onMobChange && <aside className="preview-rail" data-slot="sidebar" aria-label="Sample sidebar">
+        <span data-sidebar-row={working ? 'shelf:working' : 'shelf:settled'}>{working ? 'Working' : 'Settled'}</span>
+        <div data-thread-item="">
+          <div className="preview-thread-card" data-sidebar-row="thread:preview" aria-current="page">
+            <span>Review diff</span>
+            {working && <span className="text-info-foreground"><svg width="8" height="8" aria-hidden="true"><circle cx="4" cy="4" r="3" fill="currentColor" /></svg> {status[activity]}</span>}
+          </div>
+        </div>
+      </aside>}
       <div className="demo" data-workspace-area="conversation">
         <div className="chat-canvas" data-assistant-citation-viewport="">
           {agents.length > 0 && <School agents={agents} />}

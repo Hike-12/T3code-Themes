@@ -24,11 +24,28 @@
   --diff-deletion-foreground: #a12525;
 }
 :root.dark :is([data-chat-canvas], [data-workspace-area="conversation"],
-    [data-slot="sidebar"], [data-slot="sidebar-inner"]) {
+    [data-slot="sidebar-wrapper"], :has(> [data-slot="sidebar"])) {
   background-color: #121417;
   background-image: var(--mc-deepslate);
-  background-size: 64px 64px;
+  background-size: 96px 96px;
   image-rendering: pixelated;
+}
+:root.dark [data-slot="sidebar"] {
+  background-color: rgb(13 15 20 / 66%);
+  backdrop-filter: blur(16px) saturate(125%);
+  border-inline-end: 1px solid rgb(255 255 255 / 8%);
+  box-shadow: inset 1px 1px rgb(255 255 255 / 7%);
+}
+:root.dark [data-slot="sidebar-inner"] { background-color: transparent; }
+:root.dark [data-chat-composer-main-surface] {
+  background-color: rgb(15 17 23 / 86%);
+  backdrop-filter: blur(12px);
+}
+:root.dark [data-thread-item] [data-sidebar-row][aria-current="page"]:has(.text-info-foreground svg) {
+  background-image: linear-gradient(118deg, transparent 42%, rgb(168 85 247 / 12%) 49%, rgb(56 189 248 / 8%) 52%, transparent 59%);
+  background-size: 250% 100%;
+  animation: minecraft-enchantment 7s linear infinite;
+  animation-play-state: var(--theme-motion-state, running);
 }
 :root.dark :is([data-chat-canvas], [data-slot="sidebar"], [data-slot="sidebar-inner"]) :is(img, video, canvas) {
   image-rendering: auto;
@@ -137,6 +154,8 @@
   --mc-indicator-ink: var(--accent, #38bdf8);
   --mc-sparks: none;
   --mc-sparks-motion: none;
+  --mc-tier-glint: none;
+  --mc-gear-glint: none;
 }
 [data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *):is(
   [aria-label*="claude" i], [aria-label*="haiku" i], [aria-label*="sonnet" i], [aria-label*="opus" i]),
@@ -161,6 +180,7 @@
   [aria-label*="sol-high" i], [aria-label*="sol, medium" i], [aria-label*="sol, high" i],
   [aria-label*="reasoning" i])) {
   --mc-working-buddy: var(--mc-picked-heavy, var(--mc-model-heavy));
+  --mc-tier-glint: linear-gradient(125deg, transparent 39%, rgb(168 85 247 / 38%) 49%, rgb(125 211 252 / 35%) 54%, transparent 64%);
 }
 [data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *):is(
   [aria-label*="haiku" i], [aria-label*="flash" i],
@@ -168,6 +188,7 @@
   [aria-label*=" nano" i], [aria-label*="-nano" i], [aria-label^="nano" i],
   [aria-label*="sol low" i], [aria-label*="sol-low" i], [aria-label*="sol, low" i])) {
   --mc-working-buddy: var(--mc-picked-fast, var(--mc-model-fast));
+  --mc-tier-glint: none;
 }
 :root:has([data-thread-item]:not([hidden]) [data-sidebar-row]:not([aria-current="page"], [aria-current="true"])
   :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"], .text-info-foreground svg)) {
@@ -181,7 +202,8 @@
   --mc-indicator: "◆";
   --mc-indicator-ink: var(--mc-xp);
   --mc-sparks: var(--mc-glints);
-  --mc-sparks-motion: minecraft-glints 1.8s steps(2, end) infinite;
+  --mc-gear-glint: var(--mc-tier-glint);
+  --mc-sparks-motion: minecraft-glints 4s steps(4, end) infinite;
 }
 [data-chat-canvas]:where([data-mc-activity="Reasoning"],
   :has([data-workspace-area="composer"]:not([data-side-chat-pane] *) button[aria-label="Stop generation"]):has(
@@ -192,6 +214,7 @@
   --mc-indicator: "◆";
   --mc-indicator-ink: var(--mc-xp);
   --mc-sparks: var(--mc-glints);
+  --mc-gear-glint: none;
   --mc-sparks-motion: minecraft-glints 1.8s steps(2, end) infinite;
 }
 [data-chat-canvas]:where([data-mc-activity="Error"],
@@ -203,6 +226,7 @@
   --mc-indicator: "×";
   --mc-indicator-ink: var(--mc-error);
   --mc-sparks: none;
+  --mc-gear-glint: none;
   --mc-sparks-motion: none;
 }
 [data-chat-canvas]:where([data-mc-activity="Approval"], :has([data-chat-composer-top-drawer]:not([data-side-chat-pane] *))) {
@@ -212,6 +236,7 @@
   --mc-indicator: "!";
   --mc-indicator-ink: var(--mc-amber);
   --mc-sparks: none;
+  --mc-gear-glint: none;
   --mc-sparks-motion: none;
 }
 [data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *) { position: relative; }
@@ -245,7 +270,8 @@
   height: 72px;
   pointer-events: none;
   border: 0;
-  background: var(--mc-sparks) center / contain no-repeat;
+  background: var(--mc-sparks) center / contain no-repeat,
+    var(--mc-gear-glint) right 17px bottom 16px / 15px 15px no-repeat;
   image-rendering: pixelated;
   animation: var(--mc-sparks-motion);
   animation-play-state: var(--theme-motion-state, running);
@@ -259,9 +285,14 @@
   97% { background-position-x: var(--mc-pose); }
 }
 @keyframes minecraft-working { 50% { translate: 1px 0; } }
-@keyframes minecraft-glints { 50% { background-position-y: -4px; } }
+@keyframes minecraft-glints { 50% { background-position: center -4px, right 20px bottom 20px; } }
+@keyframes minecraft-enchantment { from { background-position-x: 160%; } to { background-position-x: -60%; } }
 @keyframes minecraft-hurt { 0% { filter: sepia(1) saturate(9) hue-rotate(318deg); } 55% { filter: none; } }
 @media (prefers-reduced-motion: reduce) {
+  :root.dark [data-thread-item] [data-sidebar-row][aria-current="page"]:has(.text-info-foreground svg) {
+    background-image: none;
+    animation: none !important;
+  }
   [data-chat-canvas] [data-chat-composer-main-surface]::before,
   [data-chat-canvas] [data-chat-composer-main-surface]::after { animation: none !important; }
 }
