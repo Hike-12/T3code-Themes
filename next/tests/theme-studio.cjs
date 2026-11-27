@@ -340,7 +340,7 @@ function readGolems(frame) {
     return [[pond, '::before'], [pond, '::after'], [canvas, '::before'], [canvas, '::after']].flatMap(([host, pseudo]) => {
       const style = getComputedStyle(host, pseudo);
       return style.content === 'none' ? [] : [{
-        sprite: style.getPropertyValue('--mc-sprite').trim(),
+        sprite: style.getPropertyValue('--mc-actor-sprite').trim(),
         transform: style.transform,
         frame: style.backgroundPositionX,
         motion: style.animationName,
@@ -414,6 +414,32 @@ async function testBlockworks(browser) {
   await model.selectOption('Gemini');
   const add = provider => page.getByRole('button', { name: 'Add ' + provider + ' subagent' });
   const finish = provider => page.getByRole('button', { name: 'Finish ' + provider + ' subagent' });
+  const mob = page.getByRole('radio', { name: 'Match model' });
+  await mob.focus();
+  await mob.press('ArrowRight');
+  assert.ok(await page.getByRole('radio', { name: 'Iron golem' }).isChecked());
+  const idleIcon = frame.locator('[data-chat-composer-footer]');
+  assert.equal(await idleIcon.evaluate(el => getComputedStyle(el, '::before').backgroundImage), sprites.OpenAI);
+  await page.getByRole('radio', { name: 'Copper golem' }).check();
+  await add('OpenCode').click();
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Claude, sprites.OpenCode]);
+  assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').backgroundImage), sprites.Claude);
+  const savedMob = await exportedTheme(page);
+  assert.match(savedMob.css, /--mc-picked-sprite: var\(--mc-claude-sprite\)/);
+  assert.match(savedMob.css, /--mc-picked-route: var\(--mc-claude-route\)/);
+  const activity = page.getByLabel('Preview activity');
+  await activity.selectOption('Reasoning');
+  const status = frame.getByRole('status');
+  assert.equal(await status.textContent(), 'Reasoning');
+  assert.equal(await status.evaluate(el => getComputedStyle(el, '::before').animationName), 'none');
+  await activity.selectOption('Coding');
+  assert.equal(await status.textContent(), 'Coding');
+  assert.equal(await status.evaluate(el => getComputedStyle(el, '::before').animationName), 't3-minecraft-feet');
+  assert.deepEqual(await exportedTheme(page), savedMob);
+  await page.getByRole('button', { name: 'Reset' }).click();
+  assert.ok(await mob.isChecked());
+  assert.equal(await activity.inputValue(), 'Idle');
+  await model.selectOption('Gemini');
   for (const provider of ['Claude', 'OpenCode', 'OpenAI']) await add(provider).click();
   assert.ok(await add('Gemini').isDisabled());
   const expected = ['Gemini', 'Claude', 'OpenCode', 'OpenAI'].map(provider => sprites[provider]);
@@ -428,16 +454,18 @@ async function testBlockworks(browser) {
   // The real studio can demonstrate both routing policies without changing the export.
   const scene = page.getByLabel('Preview conversation state');
   await scene.selectOption('conversation');
+  await activity.selectOption('Coding');
   assert.ok(await frame.getByLabel('Sample conversation').isVisible());
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({width, height:950});
     const sceneBounds = await pond.evaluate(el => {
       const messageBottom = Math.max(...[...el.querySelectorAll('[data-timeline-row-kind]')].map(row => row.getBoundingClientRect().bottom));
-      const composer = el.ownerDocument.querySelector('[data-chat-composer-main-surface]').getBoundingClientRect();
+      const composer = el.ownerDocument.querySelector('.mob-status').getBoundingClientRect();
       return {messageBottom,composerTop:composer.top};
     });
     assert.ok(sceneBounds.messageBottom < sceneBounds.composerTop, 'Conversation preview must fit above the composer');
   }
+  await activity.selectOption('Idle');
   await scene.selectOption('new');
   assert.equal(await frame.getByLabel('Sample conversation').count(), 0);
   await page.setViewportSize({width:1440,height:950});

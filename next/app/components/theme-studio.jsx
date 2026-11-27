@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowDown, ArrowLeft, RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
-import { pondProviders, themes } from '../themes';
+import { minecraftMobs, pondProviders, themes } from '../themes';
 import { ThemePreview, useTheme } from './theme-preview';
 import { DownloadAction, RangeField, SwitchField } from './ui';
 import '../studio.css';
@@ -12,6 +12,16 @@ const agentLimit = 3;
 const backgrounds = [['dark', 'Dark base'], ['light', 'Light base']];
 
 function configureTheme(base, values, slug) {
+  if (slug === 'blockworks') {
+    const overrides = [];
+    if (Object.hasOwn(minecraftMobs, values.mob)) {
+      for (const property of ['sprite', 'base-size', 'route', 'time', 'gait', 'provider-filter']) {
+        overrides.push(`--mc-picked-${property}: var(--mc-${values.mob}-${property});`);
+      }
+    }
+    if (values.still) overrides.push('--theme-motion-state: paused;');
+    return overrides.length ? { ...base, css: base.css + `\n:root { ${overrides.join(' ')} }\n` } : base;
+  }
   if (slug === 'nightfall-christmas') {
     const defaults = themes[slug].defaults;
     if (!values.still && Object.keys(defaults).every(key => values[key] === defaults[key])) return base;
@@ -98,6 +108,26 @@ function ProviderDot({ provider }) {
   return <span className="provider-dot" data-provider={provider} aria-hidden="true" />;
 }
 
+function MobPicker({ mob, onChange }) {
+  return (
+    <fieldset className="mob-picker">
+      <legend>Main thread mob</legend>
+      <div className="mob-inventory">
+        {[['auto', 'Match model'], ...Object.entries(minecraftMobs)].map(([id, name]) => (
+          <label key={id}>
+            <input type="radio" name="minecraft-mob" value={id} checked={mob === id} onChange={() => onChange(id)} />
+            <span className="mob-slot">
+              {id !== 'auto' && <img src={`/assets/blockworks/${id}.webp`} width="40" height="40" alt="" />}
+              {name}
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="settings-hint">Subagents use the mob assigned to their model.</p>
+    </fieldset>
+  );
+}
+
 function SubagentTest({ parent, setParent, agents, running, spawn, finish, disabled }) {
   return (
     <section className="school-controls" aria-labelledby="school-title">
@@ -155,6 +185,7 @@ function InstallInstructions({ name }) {
 export function ThemeStudio({ slug }) {
   const theme = themes[slug];
   const isPond = slug === 'koi-pond';
+  const isMinecraft = slug === 'blockworks';
   const hasAgents = isPond || slug === 'blockworks' || slug === 'nightfall-christmas';
   const defaultParent = theme.previewProvider || 'OpenAI';
   const { config, error } = useTheme(slug);
@@ -163,10 +194,12 @@ export function ThemeStudio({ slug }) {
   const [appearance, setAppearance] = useState('dark');
   const [parent, setParent] = useState(defaultParent);
   const [agents, setAgents] = useState([]);
+  const [activity, setActivity] = useState('Idle');
   const running = agents.filter(agent => agent.running).length;
   const configured = config && configureTheme(config, values, slug);
   const invalid = Object.values(drafts).some(draft => draft != null && !/^#?[\da-f]{6}$/i.test(draft));
   const canReset = invalid || values.still || agents.length > 0 || parent !== defaultParent
+    || activity !== 'Idle'
     || Object.entries(theme.defaults).some(([name, value]) => values[name] !== value);
 
   function updateValue(name, value) {
@@ -215,6 +248,7 @@ export function ThemeStudio({ slug }) {
     setDrafts({});
     setParent(defaultParent);
     setAgents([]);
+    setActivity('Idle');
   }
 
   function download(event) {
@@ -241,18 +275,26 @@ export function ThemeStudio({ slug }) {
 
       <div className="studio-layout">
         <section className="studio-stage" aria-label={theme.name + ' preview'}>
-          <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} />
+          <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} activity={activity} />
           {hasAgents && <SubagentTest parent={parent} setParent={setParent} agents={agents} running={running} spawn={spawn} finish={finish} disabled={!configured} />}
         </section>
 
         <div className="studio-sidebar">
           <section className="studio-settings" aria-labelledby="settings-title">
-            <h2 id="settings-title">Customize</h2>
+            <h2 id="settings-title">{isMinecraft ? 'Workbench' : 'Customize'}</h2>
             {error ? (
               <p className="studio-fallback">Customization is unavailable. <a className="open-theme" href={theme.download} download>Download original theme</a></p>
             ) : (
               <form id="theme-settings" onSubmit={download} onReset={reset}>
                 <fieldset className="settings-controls" disabled={!configured}>
+                  {isMinecraft && <>
+                    <MobPicker mob={values.mob} onChange={mob => updateValue('mob', mob)} />
+                    <label className="parent-control mob-activity">Preview activity
+                      <select value={activity} onChange={event => setActivity(event.target.value)}>
+                        {['Idle', 'Reasoning', 'Coding'].map(state => <option key={state}>{state}</option>)}
+                      </select>
+                    </label>
+                  </>}
                   {!theme.motionLabel && <fieldset>
                     <legend>Background</legend>
                     {backgrounds.map(([name, label]) => (

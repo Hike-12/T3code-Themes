@@ -85,7 +85,8 @@ function School({ agents }) {
   );
 }
 
-function PreviewConversation({ slug, parent, agents, conversation }) {
+function PreviewConversation({ slug, parent, agents, conversation, activity }) {
+  const isMinecraft = slug === 'blockworks';
   return (
     <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug} data-preview-conversation={conversation || undefined}>
       <div className="demo" data-workspace-area="conversation">
@@ -99,10 +100,14 @@ function PreviewConversation({ slug, parent, agents, conversation }) {
       </div>
       <div className="preview-composer" data-workspace-area="composer">
         <div className="new-thread">
-          {!conversation && <h1>New thread</h1>}
+          {!conversation && <h1>{isMinecraft ? 'New build' : 'New thread'}</h1>}
+          {isMinecraft && activity !== 'Idle' && (
+            <div className="mob-status" role="status" data-thread-now-line={activity === 'Coding' || undefined}
+              data-v2-item-type={activity === 'Reasoning' ? 'reasoning' : undefined}>{activity}</div>
+          )}
           <div className="composer" data-chat-composer-main-surface="">
             <span>Ask anything…</span>
-            <div className="composer-tools" aria-hidden="true">
+            <div className="composer-tools" aria-hidden="true" data-chat-composer-footer={isMinecraft && activity === 'Idle' || undefined}>
               <Paperclip size={14} />
               <span data-chat-provider-model-picker="" aria-label={`${parent} ${models[parent]}`}>{models[parent]}</span>
               <span className="submit" data-chat-composer-compact-send=""><ArrowUp size={14} /></span>
@@ -115,7 +120,7 @@ function PreviewConversation({ slug, parent, agents, conversation }) {
   );
 }
 
-export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents }) {
+export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents, activity = 'Idle' }) {
   const theme = themes[slug];
   const [frame, setFrame] = useState(null);
   const [conversation, setConversation] = useState(false);
@@ -158,8 +163,8 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
     <div className="preview" data-theme={slug} data-preview-appearance={appearance} aria-busy={!ready && !error} ref={preview}>
       <div className="preview-toolbar">
         <span className="window-title">Live preview</span>
-        {studio && slug === 'blockworks' && <label className="preview-state">Scene <select aria-label="Preview conversation state" value={conversation ? 'conversation' : 'new'} onChange={event => setConversation(event.target.value === 'conversation')}>
-          <option value="new">New thread</option><option value="conversation">Conversation</option>
+        {studio && slug === 'blockworks' && <label className="preview-state">Scene <select aria-label="Preview conversation state" value={conversation ? 'conversation' : 'new'} onChange={event => setConversation(event.target.value === 'conversation')} disabled={!ready}>
+          <option value="new">New build</option><option value="conversation">Conversation</option>
         </select></label>}
         <AppearanceControl label={theme.name + ' preview appearance'} appearance={appearance} onChange={onAppearanceChange} disabled={!ready} />
       </div>
@@ -185,7 +190,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         `}</style>,
         frame.head,
       )}
-      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation} />, frame.body)}
+      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation} activity={activity} />, frame.body)}
     </div>
   );
 }

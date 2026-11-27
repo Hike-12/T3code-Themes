@@ -1,5 +1,12 @@
 export const pondProviders = ['Claude', 'OpenAI', 'Gemini', 'OpenCode'];
 
+export const minecraftMobs = {
+  openai: 'Iron golem',
+  claude: 'Copper golem',
+  gemini: 'Allay',
+  opencode: 'Enderman',
+};
+
 export const themes = {
   'koi-pond': {
     name: 'Koi pond',
@@ -20,12 +27,12 @@ export const themes = {
   blockworks: {
     name: 'Minecraft',
     description: 'Vanilla Minecraft mobs wander around your chat, with a sword-shaped Nether portal at the edge.',
-    studioDescription: 'OpenAI has an iron golem, Gemini an allay, Claude a copper golem, and OpenCode an enderman.',
+    studioDescription: 'Pick a mob for your main thread and see it at work by the Nether portal.',
     action: 'Try Minecraft',
     download: '/downloads/blockworks.json',
     previewProvider: 'OpenAI',
     motionLabel: 'Keep characters still',
-    defaults: {},
+    defaults: { mob: 'auto' },
   },
   'nightfall-christmas': {
     name: 'Nightfall',
