@@ -3,10 +3,10 @@
   "id": "nightfall-christmas",
   "name": "Nightfall",
   "appearance": "dark",
-  "canvas": "#171615",
+  "canvas": "#101010",
   "accent": "#f1bd75",
   "colors": {
-    "canvas": "#171615",
+    "canvas": "#101010",
     "text": "#f6efe4",
     "textMuted": "#c2b6a8",
     "chrome": "#1b1917",

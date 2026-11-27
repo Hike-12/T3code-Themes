@@ -1,4 +1,4 @@
-/local-docs/
-/.vercel/
-/.next/
-/node_modules/
+local-docs/
+.vercel/
+.next/
+node_modules/

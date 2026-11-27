@@ -80,7 +80,7 @@ const {{ chromium }} = require({json.dumps(str(ROOT / 'node_modules/playwright')
 
 def palette(dark):
     if dark:
-        canvas, ink, muted = '#171615', '#f6efe4', '#c2b6a8'
+        canvas, ink, muted = '#101010', '#f6efe4', '#c2b6a8'
         chrome, surface, raised, overlay = '#1b1917', '#1f1d1b', '#262320', '#2f2b27'
         sidebar, message, border, code = '#141311', '#2c2824', '#4b4139', '#11100f'
         accent, accent_ink, focus = '#f1bd75', '#21170a', '#f5cb8d'

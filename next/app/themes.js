@@ -34,7 +34,7 @@ export const themes = {
     action: 'Try Nightfall',
     download: '/downloads/nightfall-christmas.json',
     motionLabel: 'Pause snow and lights',
-    defaults: { dark: '#171615', light: '#dde6ee', 'snow-intensity': 45, 'snow-speed': 35, 'light-brightness': 100, accumulation: true, snowmen: true },
+    defaults: { dark: '#101010', light: '#dde6ee', 'snow-intensity': 45, 'snow-speed': 35, 'light-brightness': 100, accumulation: true, snowmen: true },
   },
   'margin-notes': {
     name: 'Margin Notes',

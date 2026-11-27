@@ -498,7 +498,7 @@ async function testNightfall(browser) {
   assert.equal(await frame.locator('[data-assistant-citation-viewport]').evaluate(el => getComputedStyle(el,'::after').opacity), '0');
   await page.getByRole('button', { name: 'Reset' }).click();
   const dark = await look();
-  assert.equal(dark.canvas, 'rgb(23, 22, 21)');
+  assert.equal(dark.canvas, 'rgb(16, 16, 16)');
   assert.equal(dark.backdropImage, 'none');
   assert.equal(dark.backdropBefore, '""');
   assert.equal(dark.backdropAfter, '""');
