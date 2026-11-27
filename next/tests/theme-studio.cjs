@@ -340,7 +340,7 @@ function readGolems(frame) {
     return [[pond, '::before'], [pond, '::after'], [canvas, '::before'], [canvas, '::after']].flatMap(([host, pseudo]) => {
       const style = getComputedStyle(host, pseudo);
       return style.content === 'none' ? [] : [{
-        sprite: style.backgroundImage,
+        sprite: style.getPropertyValue('--mc-sprite').trim(),
         transform: style.transform,
         frame: style.backgroundPositionX,
         motion: style.animationName,
@@ -361,6 +361,11 @@ async function testBlockworks(browser) {
   const model = page.getByLabel('Main thread model');
   const frame = page.frameLocator('.studio-viewport iframe');
   const pond = frame.locator('.demo');
+  assert.equal(original.canvas, '#101010');
+  assert.equal(original.variants.light.canvas, '#e5e5e5');
+  // One cropped portal on the right; no left terrain or full-width floor.
+  assert.equal(await pond.evaluate(el => getComputedStyle(el).backgroundRepeat), 'no-repeat');
+  assert.match(await pond.evaluate(el => getComputedStyle(el).backgroundPosition), /100%/);
   const sprites = {};
   for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
     await model.selectOption(provider);
@@ -371,6 +376,41 @@ async function testBlockworks(browser) {
   }
   assert.equal(new Set(Object.values(sprites)).size, 4);
 
+  await model.selectOption('OpenAI');
+  const ironSize = await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').width));
+  assert.ok(await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').animationDuration) >= 60), 'Iron golem should move slowly');
+  await model.selectOption('OpenCode');
+  assert.ok(await pond.evaluate(el => parseFloat(getComputedStyle(el,'::before').width)) > ironSize);
+  assert.notEqual(await pond.evaluate(el => getComputedStyle(el,'::before').filter), 'none');
+  await model.selectOption('Gemini');
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({width,height:950});
+    const flight = await pond.evaluate(el => {
+      getComputedStyle(el,'::before').animationName;
+      const animation = el.getAnimations({subtree:true}).find(a => a.animationName === 't3-minecraft-fly');
+      animation.pause();
+      const duration = animation.effect.getTiming().duration;
+      const composer = el.ownerDocument.querySelector('[data-chat-composer-main-surface]').getBoundingClientRect();
+      const origin = el.getBoundingClientRect();
+      const ys = []; let collisions=0;
+      for(let step=0;step<120;step++) {
+        animation.currentTime=duration*step/120;
+        const style=getComputedStyle(el,'::before');
+        const matrix=new DOMMatrixReadOnly(style.transform);
+        const size=parseFloat(style.width),left=origin.left+matrix.m41,top=origin.top+matrix.m42;
+        ys.push(matrix.m42);
+        if(left<composer.right && left+size>composer.left && top<composer.bottom && top+size>composer.top)collisions++;
+      }
+      animation.currentTime=0; animation.play();
+      return {range:Math.max(...ys)-Math.min(...ys),height:origin.height,collisions};
+    });
+    assert.ok(flight.range>flight.height*.45, 'Allay should rise and dive');
+    assert.equal(flight.collisions,0,'Allay flight should avoid the composer');
+  }
+  await page.setViewportSize({width:1440,height:950});
+  // Refresh restores CSS animations after the deterministic flight sampling.
+  await page.reload();
+  await frame.locator('.composer').waitFor();
   await model.selectOption('Gemini');
   const add = provider => page.getByRole('button', { name: 'Add ' + provider + ' subagent' });
   const finish = provider => page.getByRole('button', { name: 'Finish ' + provider + ' subagent' });
@@ -379,13 +419,30 @@ async function testBlockworks(browser) {
   const expected = ['Gemini', 'Claude', 'OpenCode', 'OpenAI'].map(provider => sprites[provider]);
   assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
 
-  const dark = await pond.evaluate(el => getComputedStyle(el).backgroundImage);
+  const dark = await pond.evaluate(el => getComputedStyle(el).backgroundColor);
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
-  const light = await pond.evaluate(el => getComputedStyle(el).backgroundImage);
+  const light = await pond.evaluate(el => getComputedStyle(el).backgroundColor);
   assert.notEqual(light, dark);
   assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), expected);
 
-  const still = page.getByRole('switch', { name: 'Keep golems still' });
+  // The real studio can demonstrate both routing policies without changing the export.
+  const scene = page.getByLabel('Preview conversation state');
+  await scene.selectOption('conversation');
+  assert.ok(await frame.getByLabel('Sample conversation').isVisible());
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({width, height:950});
+    const sceneBounds = await pond.evaluate(el => {
+      const messageBottom = Math.max(...[...el.querySelectorAll('[data-timeline-row-kind]')].map(row => row.getBoundingClientRect().bottom));
+      const composer = el.ownerDocument.querySelector('[data-chat-composer-main-surface]').getBoundingClientRect();
+      return {messageBottom,composerTop:composer.top};
+    });
+    assert.ok(sceneBounds.messageBottom < sceneBounds.composerTop, 'Conversation preview must fit above the composer');
+  }
+  await scene.selectOption('new');
+  assert.equal(await frame.getByLabel('Sample conversation').count(), 0);
+  await page.setViewportSize({width:1440,height:950});
+
+  const still = page.getByRole('switch', { name: 'Keep characters still' });
   await still.click();
   assert.ok((await readGolems(frame)).every(golem => golem.playback.split(', ').every(state => state === 'paused')));
   const paused = await exportedTheme(page);
@@ -541,6 +598,8 @@ async function testNightfall(browser) {
   for (const name of ['Koi pond', 'Nightfall', 'Minecraft', 'Margin Notes', 'Dark texture']) {
     const card = defaultsPage.getByRole('article', {name});
     const frame = card.frameLocator('iframe');
+    const expectedMode = ['Koi pond', 'Minecraft', 'Dark texture'].includes(name) ? 'dark' : 'light';
+    assert.equal(await card.locator('.preview').getAttribute('data-preview-appearance'), expectedMode);
     const picker = frame.locator('[data-chat-provider-model-picker]');
     await picker.waitFor();
     assert.equal(await picker.textContent(), name === 'Koi pond' ? 'Opus 5.5 High' : '6.1 Sol High');

@@ -38,6 +38,16 @@ h1 { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.02em
 :root[data-paused] [data-chat-composer-main-surface]::before,
 :root[data-paused] [data-chat-composer-main-surface]::after { animation-play-state: paused !important; }
 .chat-canvas { position: relative; width: 100%; height: 100%; }
+[data-preview-scene="blockworks"] { --mc-content-width: 422px; }
+[data-preview-conversation] .preview-composer { align-items: end; padding-bottom: 16px; }
+.preview-messages { width: min(77%, 422px); margin-inline: auto; font-size: 12px; color: var(--text); }
+.preview-messages [data-user-message-bubble] { background: var(--composer); padding: 10px 12px; border-radius: 8px; }
+.preview-messages [data-timeline-row-kind="assistant"] { padding: 4px 12px; }
+@media (max-width: 600px) {
+  [data-preview-scene="blockworks"] { --mc-content-width: calc(100cqw - 144px); --mc-flight-width: 28px; }
+  [data-preview-scene="blockworks"][data-preview-conversation] .preview-messages { width: calc(100% - 112px); margin-left: 80px; margin-right: 32px; }
+  [data-preview-scene="blockworks"][data-preview-conversation] .new-thread { width: calc(100% - 112px); position: relative; left: 24px; }
+}
 :root[data-paused] [data-assistant-citation-viewport]::before,
 :root[data-paused] [data-assistant-citation-viewport]::after { animation-play-state: paused !important; }
 .demo:has([data-subagent-group]) + .preview-composer .new-thread { transform: translateY(-12px); }
@@ -58,10 +68,10 @@ h1 { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.02em
   padding: 5px 12px;
 }
 [data-preview-scene="blockworks"] [data-subagent-group].studio-group {
-  top: 12px;
+  top: 44px;
   bottom: auto;
-  left: 12px;
-  transform: none;
+  left: 50%;
+  transform: translateX(-50%);
 }
 [data-preview-scene="blockworks"] .studio-group button { border-radius: 6px; }
 .demo:has([data-subagent-group]) + .preview-composer :is(h1, .checkout) {

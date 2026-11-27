@@ -19,12 +19,12 @@ export const themes = {
   },
   blockworks: {
     name: 'Minecraft',
-    description: 'Blocky golems patrol a strip of grass by day and ore by night. Running subagents send out their own golems.',
-    studioDescription: 'Pick a main thread model and add subagents to see their golems patrol.',
+    description: 'Vanilla Minecraft mobs wander around your chat, with a sword-shaped Nether portal at the edge.',
+    studioDescription: 'OpenAI has an iron golem, Gemini an allay, Claude a copper golem, and OpenCode an enderman.',
     action: 'Try Minecraft',
     download: '/downloads/blockworks.json',
     previewProvider: 'OpenAI',
-    motionLabel: 'Keep golems still',
+    motionLabel: 'Keep characters still',
     defaults: {},
   },
   'nightfall-christmas': {

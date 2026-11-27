@@ -79,6 +79,9 @@ button { cursor: pointer; }
 .theme-art img { object-fit: cover; object-position: 52% 48%; filter: grayscale(1) contrast(1.14); }
 .preview { min-width: 0; border: 1px solid var(--line); display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; }
 .preview-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 4px 7px 4px 13px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.preview-state { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.preview-state select { min-width: 0; max-width: 126px; border: 1px solid var(--line); border-radius: 6px; padding: 5px; background: var(--panel); color: var(--ink); font: inherit; }
+@media (max-width: 480px) { .preview-state { font-size: 0; } .preview-state select { font-size: 11px; max-width: 106px; } }
 .window-title { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .mode-control { display: flex; min-width: 0; margin: 0; padding: 2px; background: var(--code); border: 1px solid var(--line); border-radius: 7px; }
 .mode-control:disabled { opacity: .55; }

@@ -216,7 +216,9 @@ def main():
  isolation: isolate;
  --nightfall-flake: rgba(235,244,250,.48);
 }}
-:root:not(.dark) [data-workspace-area="conversation"] {{ --nightfall-flake: rgba(105,133,155,.42); }}
+:root:not(.dark) [data-workspace-area="conversation"] {{ --nightfall-flake: rgba(255,255,255,.95); }}
+:root:not(.dark) [data-workspace-area="conversation"]::before,
+:root:not(.dark) [data-workspace-area="conversation"]::after {{ filter: drop-shadow(0 1px 1px rgba(115,143,163,.32)); }}
 [data-workspace-area="conversation"]::before,
 [data-workspace-area="conversation"]::after {{
  content: "";

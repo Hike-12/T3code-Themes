@@ -1,0 +1,14 @@
+Vanilla model, texture, and animation source:
+https://github.com/Mojang/bedrock-samples
+Revision: 15701fa9c13923f12662984c32c124327e40e3d3
+
+Files are under resource_pack/models/entity, resource_pack/animations,
+resource_pack/textures/entity, and resource_pack/textures/blocks.
+See LICENSE.txt for Mojang's terms. Minecraft is a trademark of Mojang.
+This independent theme is not an official Minecraft product.
+
+Sword portal layout reference: https://minecaft-showcase.vercel.app/#sword
+This theme renders its own block arrangement, using vanilla textures.
+
+Rebuild from next/:
+uv run --with numpy --with pillow python scripts/build-minecraft.py

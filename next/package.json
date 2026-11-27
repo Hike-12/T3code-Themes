@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:browser": "node tests/theme-studio.cjs"
+    "test:browser": "node tests/theme-studio.cjs",
+    "test:minecraft": "node tests/minecraft-routes.cjs"
   },
   "engines": {
     "node": ">=20.9"

@@ -85,17 +85,21 @@ function School({ agents }) {
   );
 }
 
-function PreviewConversation({ slug, parent, agents }) {
+function PreviewConversation({ slug, parent, agents, conversation }) {
   return (
-    <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug}>
+    <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug} data-preview-conversation={conversation || undefined}>
       <div className="demo" data-workspace-area="conversation">
         <div className="chat-canvas" data-assistant-citation-viewport="">
           {agents.length > 0 && <School agents={agents} />}
+          {conversation && <div className="messages-timeline-scroll preview-messages" aria-label="Sample conversation">
+            <div data-timeline-row-kind="user"><p data-user-message-bubble="">Keep the chat clear and let the world move around it.</p></div>
+            <div data-timeline-row-kind="assistant"><p>The golems stay to the left while the allay flies around the edges.</p></div>
+          </div>}
         </div>
       </div>
       <div className="preview-composer" data-workspace-area="composer">
         <div className="new-thread">
-          <h1>New thread</h1>
+          {!conversation && <h1>New thread</h1>}
           <div className="composer" data-chat-composer-main-surface="">
             <span>Ask anything…</span>
             <div className="composer-tools" aria-hidden="true">
@@ -114,6 +118,7 @@ function PreviewConversation({ slug, parent, agents }) {
 export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents }) {
   const theme = themes[slug];
   const [frame, setFrame] = useState(null);
+  const [conversation, setConversation] = useState(false);
   const preview = useRef(null);
   const iframe = useRef(null);
   const ready = Boolean(config && frame);
@@ -153,6 +158,9 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
     <div className="preview" data-theme={slug} data-preview-appearance={appearance} aria-busy={!ready && !error} ref={preview}>
       <div className="preview-toolbar">
         <span className="window-title">Live preview</span>
+        {studio && slug === 'blockworks' && <label className="preview-state">Scene <select aria-label="Preview conversation state" value={conversation ? 'conversation' : 'new'} onChange={event => setConversation(event.target.value === 'conversation')}>
+          <option value="new">New thread</option><option value="conversation">Conversation</option>
+        </select></label>}
         <AppearanceControl label={theme.name + ' preview appearance'} appearance={appearance} onChange={onAppearanceChange} disabled={!ready} />
       </div>
       <div className={studio ? 'preview-viewport studio-viewport' : 'preview-viewport'}>
@@ -177,13 +185,13 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         `}</style>,
         frame.head,
       )}
-      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} />, frame.body)}
+      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation} />, frame.body)}
     </div>
   );
 }
 
-export function GalleryPreview({ slug }) {
+export function GalleryPreview({ slug, initialAppearance }) {
   const { config, error } = useTheme(slug);
-  const [appearance, setAppearance] = useState(themes[slug].appearance || 'dark');
+  const [appearance, setAppearance] = useState(initialAppearance || themes[slug].appearance || 'dark');
   return <ThemePreview slug={slug} config={config} error={error} appearance={appearance} onAppearanceChange={setAppearance} parent={themes[slug].previewProvider} />;
 }
