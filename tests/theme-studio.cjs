@@ -67,7 +67,7 @@ async function testStudio(browser) {
     const response = await page.request.get(new URL('/' + slug + '.html', site).href, { maxRedirects: 0 });
     assert.equal(response.status(), 308);
     assert.equal(response.headers().location, '/' + slug);
-    assert.equal(await page.getByRole('navigation').locator('a[href="/' + slug + '"]').count(), 1);
+    assert.equal(await page.getByRole('navigation').locator('a[href="/' + slug + '"]').count(), 0);
     const link = page.locator('a[download][href="/downloads/' + slug + '.json"]');
     const downloading = page.waitForEvent('download');
     await link.click();

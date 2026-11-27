@@ -154,7 +154,7 @@ summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
   .mode-compact span { min-width: 38px; }
 }
 
-@media (max-width: 510px) {
+@media (max-width: 360px) {
   .site-header { flex-wrap: wrap; padding-block: 7px; gap: 2px; }
   .site-tools { width: 100%; justify-content: space-between; gap: 3px; }
   .site-header nav { gap: 0; }

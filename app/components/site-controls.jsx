@@ -48,8 +48,6 @@ export function SiteNavigation() {
     <div className="site-tools">
       <nav aria-label="Main navigation">
         <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>Collection</Link>
-        <Link href="/koi-pond" aria-current={pathname === '/koi-pond' ? 'page' : undefined}>Koi pond</Link>
-        <Link href="/dark-texture" aria-current={pathname === '/dark-texture' ? 'page' : undefined}>Dark texture</Link>
       </nav>
       <SiteAppearance />
     </div>
