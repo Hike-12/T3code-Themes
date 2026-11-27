@@ -105,7 +105,7 @@ async function run(browser) {
   assert.equal(crowded.overlap,0,'Ground mob lanes must not crowd each other');
 
   await page.setContent(`<!doctype html><html class="dark"><style>${theme.css}
-    :root { --mc-picked-sprite: var(--mc-claude-sprite); }
+    :root { --mc-picked-buddy: var(--mc-claude-buddy); }
     </style><div data-chat-canvas>
       <div data-workspace-area="conversation"><div data-v2-item-type="reasoning">Thinking</div></div>
       <div data-workspace-area="composer">
@@ -118,19 +118,19 @@ async function run(browser) {
   assert.equal(await page.locator('[data-workspace-area="conversation"]').evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal(await playback(), 'none');
   assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundImage ===
-    getComputedStyle(document.documentElement).getPropertyValue('--mc-claude').trim()), true);
+    getComputedStyle(document.documentElement).getPropertyValue('--mc-claude-mini').trim()), true);
   await dock.evaluate(el => {
     const stop = document.createElement('button');
     stop.setAttribute('aria-label', 'Stop generation');
     el.append(stop);
   });
-  assert.equal(await playback(), 't3-minecraft-feet');
+  assert.equal(await playback(), 't3-minecraft-tap');
   const reasoning = page.locator('[data-v2-item-type="reasoning"]');
   await reasoning.evaluate(el => { el.innerHTML = '<span class="live-tool-shine">Thinking</span>'; });
   assert.equal(await playback(), 't3-minecraft-ponder');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(await playback(), 'none');
-  assert.ok(parseFloat(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundPositionX)) > 50);
+  assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundPositionX), '50%');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await dock.getByRole('button', { name: 'Stop generation' }).evaluate(el => el.remove());
   assert.equal(await playback(), 'none');

@@ -15,7 +15,7 @@ function configureTheme(base, values, slug) {
   if (slug === 'blockworks') {
     const overrides = [];
     if (Object.hasOwn(minecraftMobs, values.mob)) {
-      for (const property of ['sprite', 'base-size', 'route', 'time', 'gait', 'provider-filter']) {
+      for (const property of ['sprite', 'base-size', 'route', 'time', 'gait', 'provider-filter', 'buddy']) {
         overrides.push(`--mc-picked-${property}: var(--mc-${values.mob}-${property});`);
       }
     }

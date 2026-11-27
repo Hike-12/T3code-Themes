@@ -366,7 +366,8 @@ async function testBlockworks(browser) {
   const look = () => dock.evaluate(el => {
     const icon = getComputedStyle(el, '::after');
     return { sprite: icon.backgroundImage, animation: icon.animationName, motion: icon.animationPlayState,
-      position: icon.backgroundPositionX, anchor: icon.position, pointerEvents: icon.pointerEvents };
+      position: icon.backgroundPositionX, anchor: icon.position, pointerEvents: icon.pointerEvents,
+      width: icon.width, sizing: icon.backgroundSize };
   });
   const sprites = {};
   for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
@@ -376,6 +377,9 @@ async function testBlockworks(browser) {
   assert.equal(new Set(Object.values(sprites)).size, 4);
   assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal((await look()).anchor, 'absolute');
+  assert.equal((await look()).width, '32px');
+  assert.equal((await look()).sizing, '300% 100%');
+  assert.match((await look()).sprite, /^url\("data:image\/png;base64,/);
   assert.equal((await look()).pointerEvents, 'none');
   assert.equal((await look()).animation, 'none');
 
@@ -386,14 +390,15 @@ async function testBlockworks(browser) {
   await page.getByRole('radio', { name: 'Copper golem' }).check();
   assert.equal((await look()).sprite === sprites.Claude, true);
   const savedMob = await exportedTheme(page);
-  assert.match(savedMob.css, /--mc-picked-sprite: var\(--mc-claude-sprite\)/);
+  assert.match(savedMob.css, /--mc-picked-buddy: var\(--mc-claude-buddy\)/);
 
   const activity = page.getByLabel('Preview activity');
   await activity.selectOption('Reasoning');
   assert.equal((await look()).animation, 't3-minecraft-ponder');
-  assert.ok(parseFloat((await look()).position) > 50);
+  assert.equal((await look()).position, '50%');
   await activity.selectOption('Coding');
-  assert.equal((await look()).animation, 't3-minecraft-feet');
+  assert.equal((await look()).animation, 't3-minecraft-tap');
+  assert.equal((await look()).position, '100%');
   assert.deepEqual(await exportedTheme(page), savedMob);
   const still = page.getByRole('switch', { name: 'Keep characters still' });
   await still.click();
@@ -406,7 +411,9 @@ async function testBlockworks(browser) {
   for (const provider of ['Claude', 'OpenCode', 'OpenAI']) {
     await page.getByRole('button', { name: 'Add ' + provider + ' subagent' }).click();
   }
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), [sprites.Claude, sprites.OpenCode, sprites.OpenAI]);
+  const roamingSprites = await dock.evaluate(el => ['claude', 'opencode', 'openai'].map(provider =>
+    getComputedStyle(el.ownerDocument.documentElement).getPropertyValue('--mc-' + provider).trim()));
+  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), roamingSprites);
   assert.ok(await page.getByRole('button', { name: 'Add Gemini subagent' }).isDisabled());
   await page.getByRole('button', { name: 'Finish OpenCode subagent' }).click();
   assert.equal((await readGolems(frame)).length, 2);

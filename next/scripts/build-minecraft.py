@@ -19,6 +19,48 @@ def embed(image, quality=76):
 providers = {'openai':'iron_golem','claude':'copper_golem','gemini':'allay','opencode':'enderman'}
 sprites = {key: renderer.sprite(value) for key, value in providers.items()}
 assets = {key: embed(sprite) for key, sprite in sprites.items()}
+
+def mini_mob(key):
+    # Three 16px frames use the same silhouette and change the eyes and pose.
+    colors = {
+        'openai': ('#d6cec0', '#a39b89', '#738856', '#643e36'),
+        'claude': ('#d58c62', '#9e593e', '#f0ae76', '#492b26'),
+        'gemini': ('#73dbeb', '#3398bd', '#bff2f1', '#285780'),
+        'opencode': ('#4b404f', '#302936', '#69516c', '#f0a3fb'),
+    }
+    body, shade, detail, eyes = colors[key]
+    sheet = Image.new('RGBA', (48, 16))
+    for stage in range(3):
+        frame = Image.new('RGBA', (16, 16))
+        draw = ImageDraw.Draw(frame)
+        if key == 'gemini':
+            draw.rectangle((0, 6 if stage != 2 else 4, 15, 8), fill=detail)
+            draw.rectangle((6, 8, 9, 13), fill=shade)
+            draw.rectangle((4, 3, 11, 10), fill=body)
+        else:
+            draw.rectangle((4, 9, 11, 12), fill=shade)
+            draw.rectangle((3, 7, 4, 12 - (stage == 2)), fill=shade)
+            draw.rectangle((11, 7, 12, 12 + (stage == 2)), fill=shade)
+            draw.rectangle((5, 12, 6, 14), fill=shade)
+            draw.rectangle((9, 12, 10, 14 - (stage == 2)), fill=shade)
+            draw.rectangle((4, 2, 11, 9), fill=body)
+            if key == 'opencode':
+                draw.rectangle((3, 2, 12, 8), fill=body)
+            elif key == 'claude':
+                draw.rectangle((7, 0, 8, 2), fill=detail)
+                draw.rectangle((7, 7, 8, 10), fill=detail)
+            else:
+                draw.rectangle((4, 3, 5, 4), fill=detail)
+                draw.rectangle((7, 6, 8, 9), fill=shade)
+        eye_y = 6 + (stage == 1)
+        for x in (5, 9):
+            draw.rectangle((x, eye_y - (stage == 2), x + 1, eye_y), fill=eyes)
+        sheet.paste(frame, (stage * 16, 0))
+    out = BytesIO()
+    sheet.save(out, 'PNG', optimize=True)
+    return 'url("data:image/png;base64,' + b64encode(out.getvalue()).decode() + '")'
+
+assets.update({f'{key}-mini': mini_mob(key) for key in providers})
 portraits = ROOT / 'public/assets/blockworks'
 portraits.mkdir(exist_ok=True)
 for key, sprite in sprites.items():
@@ -133,15 +175,15 @@ settings = {
                  'time': '120s', 'gait': '2s', 'provider-filter': 'var(--mc-rim)'},
 }
 for name, overrides in settings.items():
-    preset = {**defaults, **overrides, 'sprite': f'var(--mc-{name})'}
+    preset = {**defaults, **overrides, 'sprite': f'var(--mc-{name})', 'buddy': f'var(--mc-{name}-mini)'}
     css += ':root { ' + ' '.join(f'--mc-{name}-{key}: {value};' for key, value in preset.items()) + ' }\n'
     if selectors[name]:
-        properties = ' '.join(f'--mc-{key}: var(--mc-{name}-{key});' for key in preset)
+        properties = ' '.join(f'--mc-{key}: var(--mc-{name}-{key});' for key in preset if key != 'buddy')
         css += ',\n'.join(selectors[name]) + ' { ' + properties + ' }\n'
         label = ':is([aria-label*="gemini" i], [aria-label*="antigravity" i])' if name == 'gemini' else f'[aria-label*="{name}" i]'
         css += (f'{canvas}:has(> {composer} {picker}{label}),\n'
                 f'{canvas}:has(> {composer} {picker} :is({markers[name]})) '
-                f'{{ --mc-status-sprite: var(--mc-{name}); }}\n')
+                f'{{ --mc-status-buddy: var(--mc-{name}-mini); }}\n')
 
 css+=f'''
 {chat}::before {{
@@ -214,34 +256,36 @@ css+=f'''
 {canvas}:has({buddy}) > {chat}::before {{ content: none; }}
 {canvas} :is({buddy}){main_chat_only} {{ position: relative; }}
 {canvas} :is({buddy}){main_chat_only} [data-chat-composer-body] {{
-  min-height: 48px;
-  padding-inline-end: 56px;
+  min-height: 36px;
+  padding-inline-end: 40px;
 }}
 {canvas} :is({buddy}){main_chat_only}::after {{
   content: "";
   position: absolute;
   inset-inline-end: 8px;
-  top: 6px;
-  width: 40px;
-  height: 40px;
+  top: 8px;
+  width: 32px;
+  height: 32px;
   pointer-events: none;
   image-rendering: pixelated;
-  background: var(--mc-picked-sprite, var(--mc-status-sprite, var(--mc-openai))) no-repeat 0 0 / 800% 100%;
+  background: var(--mc-picked-buddy, var(--mc-status-buddy, var(--mc-openai-mini))) no-repeat 0 0 / 300% 100%;
   animation-play-state: var(--theme-motion-state, running);
 }}
-{canvas} {main_composer}[data-mc-activity="Coding"]::after,
+{canvas} :is({buddy})[data-mc-activity="Coding"]{main_chat_only}::after,
 {canvas}{generating} :is({buddy}){main_chat_only}::after,
 {canvas}:has({now_line}{main_chat_only}) :is({buddy}){main_chat_only}::after {{
-  animation: t3-minecraft-feet 1.2s steps(8, end) infinite;
+  background-position-x: 100%;
+  animation: t3-minecraft-tap .48s steps(1, end) infinite;
   animation-play-state: var(--theme-motion-state, running);
 }}
 {canvas} :is({buddy})[data-mc-activity="Reasoning"]{main_chat_only}::after,
 {canvas}{generating}{thinking} :is({buddy}){main_chat_only}::after {{
-  background-position-x: 57.142857%;
-  animation: t3-minecraft-ponder 1.5s ease-in-out infinite alternate;
+  background-position-x: 50%;
+  animation: t3-minecraft-ponder 1.6s steps(1, end) infinite;
   animation-play-state: var(--theme-motion-state, running);
 }}
-@keyframes t3-minecraft-ponder {{ to {{ transform: translateY(-4px); }} }}
+@keyframes t3-minecraft-ponder {{ 50% {{ transform: translateY(2px); }} }}
+@keyframes t3-minecraft-tap {{ 50% {{ transform: translateY(-2px); }} }}
 @media (prefers-reduced-motion: reduce) {{
   {all_slots},
   {canvas} :is({buddy})::after {{ animation: none !important; }}
