@@ -15,9 +15,7 @@ function configureTheme(base, values, slug) {
   if (slug === 'blockworks') {
     const overrides = [];
     if (Object.hasOwn(minecraftMobs, values.mob)) {
-      for (const property of ['sprite', 'base-size', 'route', 'time', 'gait', 'provider-filter', 'buddy']) {
-        overrides.push(`--mc-picked-${property}: var(--mc-${values.mob}-${property});`);
-      }
+      overrides.push(`--mc-picked-buddy: var(--mc-${values.mob});`);
     }
     if (values.still) overrides.push('--theme-motion-state: paused;');
     return overrides.length ? { ...base, css: base.css + `\n:root { ${overrides.join(' ')} }\n` } : base;
@@ -108,26 +106,6 @@ function ProviderDot({ provider }) {
   return <span className="provider-dot" data-provider={provider} aria-hidden="true" />;
 }
 
-function MobPicker({ mob, onChange }) {
-  return (
-    <fieldset className="mob-picker">
-      <legend>Main thread mob</legend>
-      <div className="mob-inventory">
-        {[['auto', 'Match model'], ...Object.entries(minecraftMobs)].map(([id, name]) => (
-          <label key={id}>
-            <input type="radio" name="minecraft-mob" value={id} checked={mob === id} onChange={() => onChange(id)} />
-            <span className="mob-slot">
-              {id !== 'auto' && <img src={`/assets/blockworks/${id}.webp`} width="40" height="40" alt="" />}
-              {name}
-            </span>
-          </label>
-        ))}
-      </div>
-      <p className="settings-hint">Subagents use the mob assigned to their model.</p>
-    </fieldset>
-  );
-}
-
 function SubagentTest({ parent, setParent, agents, running, spawn, finish, disabled }) {
   return (
     <section className="school-controls" aria-labelledby="school-title">
@@ -186,7 +164,7 @@ export function ThemeStudio({ slug }) {
   const theme = themes[slug];
   const isPond = slug === 'koi-pond';
   const isMinecraft = slug === 'blockworks';
-  const hasAgents = isPond || slug === 'blockworks' || slug === 'nightfall-christmas';
+  const hasAgents = isPond || slug === 'nightfall-christmas';
   const defaultParent = theme.previewProvider || 'OpenAI';
   const { config, error } = useTheme(slug);
   const [values, setValues] = useState(theme.defaults);
@@ -275,7 +253,8 @@ export function ThemeStudio({ slug }) {
 
       <div className="studio-layout">
         <section className="studio-stage" aria-label={theme.name + ' preview'}>
-          <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} activity={activity} />
+          <ThemePreview slug={slug} config={configured} error={error} appearance={appearance} onAppearanceChange={setAppearance} studio parent={parent} agents={agents} activity={activity} mob={values.mob}
+            onMobChange={isMinecraft ? mob => updateValue('mob', mob) : undefined} />
           {hasAgents && <SubagentTest parent={parent} setParent={setParent} agents={agents} running={running} spawn={spawn} finish={finish} disabled={!configured} />}
         </section>
 
@@ -288,10 +267,14 @@ export function ThemeStudio({ slug }) {
               <form id="theme-settings" onSubmit={download} onReset={reset}>
                 <fieldset className="settings-controls" disabled={!configured}>
                   {isMinecraft && <>
-                    <MobPicker mob={values.mob} onChange={mob => updateValue('mob', mob)} />
+                    <label className="parent-control mob-activity">Main thread model
+                      <select value={parent} onChange={event => setParent(event.target.value)}>
+                        {pondProviders.map(provider => <option key={provider}>{provider}</option>)}
+                      </select>
+                    </label>
                     <label className="parent-control mob-activity">Preview activity
                       <select value={activity} onChange={event => setActivity(event.target.value)}>
-                        {['Idle', 'Reasoning', 'Coding'].map(state => <option key={state}>{state}</option>)}
+                        {['Idle', 'Reasoning', 'Coding', 'Approval', 'Error', 'Background'].map(state => <option key={state}>{state}</option>)}
                       </select>
                     </label>
                   </>}
@@ -341,10 +324,10 @@ export function ThemeStudio({ slug }) {
               </form>
             )}
           </section>
-          {hasAgents && <InstallInstructions name={theme.name} />}
+          {(hasAgents || isMinecraft) && <InstallInstructions name={theme.name} />}
         </div>
       </div>
-      {!hasAgents && <InstallInstructions name={theme.name} />}
+      {!hasAgents && !isMinecraft && <InstallInstructions name={theme.name} />}
     </main>
   );
 }

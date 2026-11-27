@@ -1,0 +1,178 @@
+/* This theme uses T3 Code's own controls and lifecycle indicators. */
+:root.dark {
+  --mc-slot: #191b20;
+  --mc-slot-dark: #0b0c0e;
+  --mc-slot-light: #2c3038;
+  --mc-oak-edge: #3a3129;
+  --mc-xp: #4ade80;
+  --mc-amber: #f4c36e;
+  --mc-error: #ff8585;
+  --diff-addition-foreground: #69d6a1;
+  --diff-deletion-foreground: #ff8585;
+}
+:root:not(.dark) {
+  --mc-slot: #f8f9fb;
+  --mc-slot-dark: #a9afbb;
+  --mc-slot-light: #dce0e6;
+  --mc-oak-edge: #c7b9a9;
+  --mc-xp: #137442;
+  --mc-amber: #855012;
+  --mc-error: #9e2222;
+  --diff-addition-foreground: #137442;
+  --diff-deletion-foreground: #a12525;
+}
+:is([data-slot="sidebar"], [data-slot="composer-host"], [data-thread-details-card],
+    [data-slot="dialog-popup"], [data-slot="alert-dialog-popup"], [data-slot="sheet-popup"],
+    [data-slot="popover-popup"], [data-slot="menu-popup"], [data-diffs-header],
+    [data-chat-composer-top-drawer], [data-composer-command-drawer], [data-composer-stash-drawer],
+    [data-user-message-bubble], .chat-markdown-codeblock, [data-chat-composer-main-surface]) {
+  border-radius: 2px;
+}
+:is([data-chat-composer-main-surface], [data-chat-composer-top-drawer], [data-composer-command-drawer],
+    [data-composer-stash-drawer], .chat-markdown-codeblock) {
+  background-color: var(--mc-slot);
+  border: 1px solid;
+  border-color: var(--mc-slot-dark) var(--mc-slot-light) var(--mc-slot-light) var(--mc-slot-dark);
+}
+[data-chat-composer-main-surface]:focus-within { border-color: var(--ring, var(--accent)); }
+[data-user-message-bubble] { border: 1px solid var(--mc-oak-edge); }
+[data-chat-composer-form] button:is([aria-label="Stop generation"], [aria-label="Stopping"]),
+[data-mc-activity="Coding"] [data-chat-composer-compact-send],
+[data-mc-activity="Reasoning"] [data-chat-composer-compact-send] {
+  background-color: #d92b2b;
+  color: #fff;
+  border-radius: 2px;
+}
+[data-chat-composer-form] button[aria-label="Stop generation"]:enabled:hover { background-color: #bf2525; }
+
+:is([data-thread-now-line] .tabular-nums, [data-chat-thread-status-line] .tabular-nums,
+    [data-mc-preview-status], [data-thread-item] [data-slot="badge"],
+    [data-sidebar-row="shelf:working"], [data-sidebar-row="shelf:settled"]) {
+  font-family: "Minecraft UI", ui-monospace, monospace;
+  font-size: 10px;
+}
+[data-chat-canvas]:has(button[aria-label="Stop generation"]) [data-thread-now-line] > span:first-child,
+[data-chat-canvas]:has(button[aria-label="Stop generation"]) [data-chat-thread-status-line] > svg,
+[data-thread-item] :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"]) {
+  color: var(--mc-xp);
+}
+[data-thread-item] :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"]) { background-color: var(--mc-xp); }
+[data-chat-canvas]:has(button[aria-label="Stop generation"]) button:has(> svg.lucide-git-branch),
+[data-mc-activity="Coding"] .checkout { color: var(--accent); }
+:is(.text-diff-addition, .text-diff-addition-foreground) { color: var(--diff-addition-foreground); }
+:is(.text-diff-deletion, .text-diff-deletion-foreground) { color: var(--diff-deletion-foreground); }
+
+/* Keep the existing accessible control and replace just its artwork. */
+:is([data-chat-header], [data-thread-details-card], [data-workspace-area="composer"]) svg:is(.lucide-git-branch, .lucide-git-branch-plus) {
+  --mc-control-icon: var(--mc-craft);
+  color: var(--accent);
+}
+:is([data-open-favorite-editor], [aria-label="Open in VS Code"], [title="Open in VS Code"]) svg { --mc-control-icon: var(--mc-book); }
+:is([aria-label="Add project script"], [aria-label="Add action"]) svg { --mc-control-icon: var(--mc-repeater); }
+[data-workspace-area="composer"] :is([aria-label="Attach files"] svg, svg.lucide-paperclip),
+[data-composer-mention-chip] svg { --mc-control-icon: var(--mc-paper); }
+[data-composer-skill] svg { --mc-control-icon: var(--mc-emerald); }
+[data-composer-command-drawer] [data-slot="command-item"] svg.lucide-terminal { --mc-control-icon: var(--mc-command); }
+:is([data-chat-header], [data-thread-details-card], [data-workspace-area="composer"]) svg:is(.lucide-git-branch, .lucide-git-branch-plus),
+:is([data-open-favorite-editor], [aria-label="Open in VS Code"], [title="Open in VS Code"],
+    [aria-label="Add project script"], [aria-label="Add action"]) svg,
+[data-workspace-area="composer"] :is([aria-label="Attach files"] svg, svg.lucide-paperclip),
+:is([data-composer-mention-chip], [data-composer-skill]) svg,
+[data-composer-command-drawer] [data-slot="command-item"] svg.lucide-terminal {
+  width: 16px;
+  height: 16px;
+  background: var(--mc-control-icon) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+:is([data-chat-header], [data-thread-details-card], [data-workspace-area="composer"]) svg:is(.lucide-git-branch, .lucide-git-branch-plus) > *,
+:is([data-open-favorite-editor], [aria-label="Open in VS Code"], [title="Open in VS Code"],
+    [aria-label="Add project script"], [aria-label="Add action"]) svg > *,
+[data-workspace-area="composer"] :is([aria-label="Attach files"] svg, svg.lucide-paperclip) > *,
+:is([data-composer-mention-chip], [data-composer-skill]) svg > *,
+[data-composer-command-drawer] [data-slot="command-item"] svg.lucide-terminal > * { visibility: hidden; }
+
+/* One companion per main composer. State is read from the current thread's own UI. */
+[data-chat-canvas] {
+  --mc-model-mob: var(--mc-openai);
+  --mc-pose: 0%;
+  --mc-move: minecraft-idle 4s steps(1, end) infinite;
+  --mc-indicator: var(--mc-elsewhere, none);
+  --mc-indicator-ink: var(--accent, #38bdf8);
+}
+[data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *)[aria-label*="claude" i], [data-chat-provider-model-picker]:not([data-side-chat-pane] *) [data-provider-kind="claude"]) {
+  --mc-model-mob: var(--mc-claude);
+}
+[data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *):is([aria-label*="gemini" i], [aria-label*="antigravity" i])) {
+  --mc-model-mob: var(--mc-gemini);
+}
+[data-chat-canvas]:has([data-chat-provider-model-picker]:not([data-side-chat-pane] *)[aria-label*="opencode" i]) {
+  --mc-model-mob: var(--mc-opencode);
+}
+:root:has([data-thread-item]:not([hidden]) [data-sidebar-row]:not([aria-current="page"], [aria-current="true"])
+  :is([class~="bg-sky-500"], [class~="dark:bg-sky-300/80"])) {
+  --mc-elsewhere: "z";
+}
+[data-chat-canvas][data-mc-activity="Background"] { --mc-indicator: "z"; }
+[data-chat-canvas]:where([data-mc-activity="Coding"], :has([data-workspace-area="composer"]:not([data-side-chat-pane] *) button:is([aria-label="Stop generation"], [aria-label="Stopping"]):not([hidden]))) {
+  --mc-pose: 100%;
+  --mc-move: minecraft-working .85s steps(1, end) infinite;
+  --mc-indicator: "◆";
+  --mc-indicator-ink: var(--mc-xp);
+}
+[data-chat-canvas]:where([data-mc-activity="Reasoning"],
+  :has([data-workspace-area="composer"]:not([data-side-chat-pane] *) button[aria-label="Stop generation"]):has(
+    [data-v2-item-type="reasoning"]:not([data-side-chat-pane] *) :is(.live-tool-shine, .lucide-brain.text-foreground))) {
+  --mc-pose: 50%;
+  --mc-move: minecraft-idle 2.2s steps(1, end) infinite;
+  --mc-indicator: "◆";
+  --mc-indicator-ink: var(--mc-xp);
+}
+[data-chat-canvas]:where([data-mc-activity="Error"], :has([data-timeline-row-kind]:last-child [data-v2-item-type="error"]:not([data-side-chat-pane] *))) {
+  --mc-pose: 50%;
+  --mc-move: minecraft-hurt .38s steps(1, end) 2;
+  --mc-indicator: "×";
+  --mc-indicator-ink: var(--mc-error);
+}
+[data-chat-canvas]:where([data-mc-activity="Approval"], :has([data-chat-composer-top-drawer]:not([data-side-chat-pane] *))) {
+  --mc-pose: 50%;
+  --mc-move: none;
+  --mc-indicator: "!";
+  --mc-indicator-ink: var(--mc-amber);
+}
+[data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *) { position: relative; }
+[data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *)::after {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: auto 24px calc(100% - 2px) auto;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: var(--mc-picked-buddy, var(--mc-model-mob)) no-repeat var(--mc-pose) 0 / 300% 100%;
+  animation: var(--mc-move);
+  animation-play-state: var(--theme-motion-state, running);
+}
+[data-chat-canvas] [data-chat-composer-main-surface]:not([data-side-chat-pane] *)::before {
+  content: var(--mc-indicator);
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: auto 11px calc(100% + 9px) auto;
+  z-index: 3;
+  width: 10px;
+  height: 11px;
+  pointer-events: none;
+  border: 0;
+  background: none;
+  color: var(--mc-indicator-ink);
+  font: 10px/1 ui-monospace, monospace;
+}
+@keyframes minecraft-idle { 76% { translate: 0 -1px; } 88% { translate: 0 0; } }
+@keyframes minecraft-working { 50% { translate: 1px 0; } }
+@keyframes minecraft-hurt { 0% { filter: sepia(1) saturate(9) hue-rotate(318deg); } 55% { filter: none; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-chat-canvas] [data-chat-composer-main-surface]::after { animation: none !important; }
+}

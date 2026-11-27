@@ -5,6 +5,8 @@ export const minecraftMobs = {
   claude: 'Copper golem',
   gemini: 'Allay',
   opencode: 'Enderman',
+  creeper: 'Creeper',
+  fox: 'Fox',
 };
 
 export const themes = {
@@ -26,12 +28,12 @@ export const themes = {
   },
   blockworks: {
     name: 'Minecraft',
-    description: 'Vanilla Minecraft mobs wander around your chat, with a sword-shaped Nether portal at the edge.',
-    studioDescription: 'Pick a mob for your main thread and see it at work by the Nether portal.',
+    description: 'Deepslate surfaces, spruce messages, and one pixel mob on the composer.',
+    studioDescription: 'Pick a mob on the prompt bar. Switch preview activity to see how it reacts.',
     action: 'Try Minecraft',
     download: '/downloads/blockworks.json',
     previewProvider: 'OpenAI',
-    motionLabel: 'Keep characters still',
+    motionLabel: 'Keep the buddy still',
     defaults: { mob: 'auto' },
   },
   'nightfall-christmas': {

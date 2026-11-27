@@ -333,23 +333,6 @@ async function testNativeComposerGemini(browser) {
   await page.close();
 }
 
-function readGolems(frame) {
-  return frame.locator('.demo').evaluate(pond => {
-    const canvas = pond.querySelector('[data-assistant-citation-viewport]');
-    return [[pond, '::before'], [pond, '::after'], [canvas, '::before'], [canvas, '::after']].flatMap(([host, pseudo]) => {
-      const style = getComputedStyle(host, pseudo);
-      return style.content === 'none' ? [] : [{
-        sprite: style.getPropertyValue('--mc-actor-sprite').trim(),
-        transform: style.transform,
-        frame: style.backgroundPositionX,
-        motion: style.animationName,
-        playback: style.animationPlayState,
-        pointerEvents: style.pointerEvents,
-      }];
-    });
-  });
-}
-
 async function testBlockworks(browser) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
   const errors = [];
@@ -360,14 +343,14 @@ async function testBlockworks(browser) {
   const model = page.getByLabel('Main thread model');
   const frame = page.frameLocator('.studio-viewport iframe');
   const pond = frame.locator('.demo');
-  assert.equal(original.canvas, '#101010');
-  assert.equal(original.variants.light.canvas, '#e5e5e5');
+  assert.equal(original.canvas, '#121316');
+  assert.equal(original.variants.light.canvas, '#e8e9ec');
   const dock = frame.locator('[data-chat-composer-main-surface]');
   const look = () => dock.evaluate(el => {
     const icon = getComputedStyle(el, '::after');
     return { sprite: icon.backgroundImage, animation: icon.animationName, motion: icon.animationPlayState,
       position: icon.backgroundPositionX, anchor: icon.position, pointerEvents: icon.pointerEvents,
-      width: icon.width, sizing: icon.backgroundSize };
+      width: icon.width, sizing: icon.backgroundSize, badge: getComputedStyle(el, '::before').content };
   });
   const sprites = {};
   for (const provider of ['Gemini', 'Claude', 'OpenCode', 'OpenAI']) {
@@ -377,30 +360,40 @@ async function testBlockworks(browser) {
   assert.equal(new Set(Object.values(sprites)).size, 4);
   assert.equal(await pond.evaluate(el => getComputedStyle(el, '::before').content), 'none');
   assert.equal((await look()).anchor, 'absolute');
-  assert.equal((await look()).width, '32px');
+  assert.equal((await look()).width, '24px');
   assert.equal((await look()).sizing, '300% 100%');
   assert.match((await look()).sprite, /^url\("data:image\/png;base64,/);
   assert.equal((await look()).pointerEvents, 'none');
-  assert.equal((await look()).animation, 'none');
+  assert.equal((await look()).animation, 'minecraft-idle');
 
-  const matchModel = page.getByRole('radio', { name: 'Match model' });
-  await matchModel.focus();
-  await matchModel.press('ArrowRight');
-  assert.ok(await page.getByRole('radio', { name: 'Iron golem' }).isChecked());
-  await page.getByRole('radio', { name: 'Copper golem' }).check();
+  const buddy = frame.getByRole('combobox', { name: 'Mob buddy' });
+  await buddy.focus();
+  await buddy.press('ArrowDown');
+  assert.equal(await buddy.inputValue(), 'openai');
+  await buddy.selectOption('claude');
   assert.equal((await look()).sprite === sprites.Claude, true);
   const savedMob = await exportedTheme(page);
-  assert.match(savedMob.css, /--mc-picked-buddy: var\(--mc-claude-buddy\)/);
+  assert.match(savedMob.css, /--mc-picked-buddy: var\(--mc-claude\)/);
+  for (const mob of ['creeper', 'fox']) {
+    await buddy.selectOption(mob);
+    assert.ok(!Object.values(sprites).includes((await look()).sprite));
+  }
+  await buddy.selectOption('claude');
 
   const activity = page.getByLabel('Preview activity');
   await activity.selectOption('Reasoning');
-  assert.equal((await look()).animation, 't3-minecraft-ponder');
+  assert.equal((await look()).animation, 'minecraft-idle');
   assert.equal((await look()).position, '50%');
   await activity.selectOption('Coding');
-  assert.equal((await look()).animation, 't3-minecraft-tap');
+  assert.equal((await look()).animation, 'minecraft-working');
   assert.equal((await look()).position, '100%');
   assert.deepEqual(await exportedTheme(page), savedMob);
-  const still = page.getByRole('switch', { name: 'Keep characters still' });
+  for (const [state, badge] of [['Approval', '!'], ['Error', '\u00d7'], ['Background', 'z']]) {
+    await activity.selectOption(state);
+    assert.equal((await look()).badge, JSON.stringify(badge));
+  }
+  await activity.selectOption('Coding');
+  const still = page.getByRole('switch', { name: 'Keep the buddy still' });
   await still.click();
   assert.equal((await look()).motion, 'paused');
   await still.click();
@@ -408,15 +401,6 @@ async function testBlockworks(browser) {
   assert.equal((await look()).animation, 'none');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-  for (const provider of ['Claude', 'OpenCode', 'OpenAI']) {
-    await page.getByRole('button', { name: 'Add ' + provider + ' subagent' }).click();
-  }
-  const roamingSprites = await dock.evaluate(el => ['claude', 'opencode', 'openai'].map(provider =>
-    getComputedStyle(el.ownerDocument.documentElement).getPropertyValue('--mc-' + provider).trim()));
-  assert.deepEqual((await readGolems(frame)).map(golem => golem.sprite), roamingSprites);
-  assert.ok(await page.getByRole('button', { name: 'Add Gemini subagent' }).isDisabled());
-  await page.getByRole('button', { name: 'Finish OpenCode subagent' }).click();
-  assert.equal((await readGolems(frame)).length, 2);
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
   assert.equal((await look()).sprite === sprites.Claude, true);
 
@@ -424,17 +408,17 @@ async function testBlockworks(browser) {
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.ok(await page.locator('.preview-toolbar').evaluate(el => el.scrollWidth <= el.clientWidth));
     const clearsMessages = await dock.evaluate(el => {
       const icon = getComputedStyle(el, '::after');
-      const top = el.getBoundingClientRect().top + parseFloat(icon.top) - 4;
+      const top = el.getBoundingClientRect().top - parseFloat(icon.height);
       return top > el.ownerDocument.querySelector('.preview-messages').getBoundingClientRect().bottom;
     });
     assert.ok(clearsMessages, 'The buddy should clear the conversation at ' + width + 'px');
   }
   await page.getByRole('button', { name: 'Reset' }).click();
-  assert.ok(await matchModel.isChecked());
+  assert.equal(await buddy.inputValue(), 'auto');
   assert.equal(await activity.inputValue(), 'Idle');
-  assert.equal((await readGolems(frame)).length, 0);
   assert.deepEqual(await exportedTheme(page), original);
   assert.deepEqual(errors, []);
   await page.close();

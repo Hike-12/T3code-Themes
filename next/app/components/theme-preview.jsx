@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, GitBranch, Paperclip } from 'lucide-react';
+import { ArrowUp, GitBranch, Paperclip, Square } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { themes } from '../themes';
+import { minecraftMobs, themes } from '../themes';
 import { AppearanceControl } from './ui';
 
 const colorTokens = {
@@ -85,38 +85,54 @@ function School({ agents }) {
   );
 }
 
-function PreviewConversation({ slug, parent, agents, conversation, activity }) {
+function PreviewConversation({ slug, parent, agents, conversation, activity, mob, onMobChange }) {
   const isMinecraft = slug === 'blockworks';
+  const working = activity === 'Coding' || activity === 'Reasoning';
+  const status = { Idle: 'Settled', Coding: 'Working 37s', Reasoning: 'Thinking', Approval: 'Needs approval', Error: 'Tool failed', Background: 'Other thread working' };
   return (
-    <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug} data-preview-conversation={conversation || undefined}>
+    <div className="preview-workspace" data-chat-canvas="" data-preview-scene={slug} data-preview-conversation={conversation || undefined}
+      data-mc-activity={isMinecraft ? activity : undefined}>
       <div className="demo" data-workspace-area="conversation">
         <div className="chat-canvas" data-assistant-citation-viewport="">
           {agents.length > 0 && <School agents={agents} />}
           {conversation && <div className="messages-timeline-scroll preview-messages" aria-label="Sample conversation">
-            <div data-timeline-row-kind="user"><p data-user-message-bubble="">Keep the chat clear and let the world move around it.</p></div>
-            <div data-timeline-row-kind="assistant"><p>The golems stay to the left while the allay flies around the edges.</p></div>
+            <div data-timeline-row-kind="user"><p data-user-message-bubble="">Review the diff and flag anything that could break the build.</p></div>
+            <div data-timeline-row-kind="assistant"><p>I’ll check the changed files and run the build.</p></div>
           </div>}
         </div>
       </div>
       <div className="preview-composer" data-workspace-area="composer">
         <div className="new-thread">
           {!conversation && <h1>{isMinecraft ? 'New build' : 'New thread'}</h1>}
-          <div className="composer" data-chat-composer-main-surface="" data-mc-activity={isMinecraft ? activity : undefined}>
+          <div className="composer" data-chat-composer-main-surface="">
             {isMinecraft ? <div data-chat-composer-body="">Ask anything…</div> : <span>Ask anything…</span>}
-            <div className="composer-tools" aria-hidden="true">
-              <Paperclip size={14} />
+            <div className="composer-tools" aria-hidden={!onMobChange || undefined}>
+              <Paperclip size={14} aria-hidden="true" />
               <span data-chat-provider-model-picker="" aria-label={`${parent} ${models[parent]}`}>{models[parent]}</span>
-              <span className="submit" data-chat-composer-compact-send=""><ArrowUp size={14} /></span>
+              {onMobChange && <select className="mob-select" aria-label="Mob buddy" value={mob} onChange={event => onMobChange(event.target.value)}>
+                <option value="auto">Match model</option>
+                {Object.entries(minecraftMobs).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>}
+              <span className="submit" data-chat-composer-compact-send="" aria-hidden="true">
+                {isMinecraft && working ? <Square size={10} fill="currentColor" /> : <ArrowUp size={14} />}
+              </span>
             </div>
           </div>
-          <div className="checkout"><GitBranch size={12} aria-hidden="true" /> main</div>
+          <div className="checkout">
+            <GitBranch size={12} aria-hidden="true" /> {isMinecraft ? 'workbench' : 'main'}
+            {isMinecraft && <><span data-mc-preview-status="" role={onMobChange ? 'status' : undefined}>{status[activity]}</span>
+              {conversation && <span className="diff-counts" aria-label="84 additions, 16 deletions">
+                <span className="text-diff-addition-foreground">+84</span>
+                <span className="text-diff-deletion-foreground">−16</span>
+              </span>}</>}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents, activity = 'Idle' }) {
+export function ThemePreview({ slug, config, error, appearance, onAppearanceChange, studio = false, parent = 'OpenAI', agents = emptyAgents, activity = 'Idle', mob, onMobChange }) {
   const theme = themes[slug];
   const [frame, setFrame] = useState(null);
   const [conversation, setConversation] = useState(false);
@@ -168,7 +184,7 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         <iframe
           title={`Live ${theme.name} preview`}
           sandbox="allow-same-origin"
-          tabIndex={-1}
+          tabIndex={onMobChange ? 0 : -1}
           srcDoc={frameSource}
           ref={iframe}
           onLoad={attachLoadedFrame}
@@ -186,7 +202,8 @@ export function ThemePreview({ slug, config, error, appearance, onAppearanceChan
         `}</style>,
         frame.head,
       )}
-      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation} activity={activity} />, frame.body)}
+      {ready && createPortal(<PreviewConversation slug={slug} parent={parent} agents={agents} conversation={conversation}
+        activity={activity} mob={mob} onMobChange={onMobChange} />, frame.body)}
     </div>
   );
 }

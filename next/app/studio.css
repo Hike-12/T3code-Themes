@@ -82,30 +82,6 @@
 .studio-sidebar .studio-note { margin-top: 14px; font-size: 13px; }
 .studio-sidebar .studio-note h2 { font-size: 17px; }
 
-.mob-inventory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-block: 8px; }
-.mob-inventory label { position: relative; }
-.mob-inventory label:first-child { grid-column: 1 / -1; }
-.mob-inventory input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
-.mob-slot {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--code);
-  color: var(--muted);
-  text-align: center;
-}
-.mob-slot img { object-fit: contain; image-rendering: pixelated; }
-.mob-inventory input[value="opencode"] + .mob-slot img { filter: drop-shadow(1px 0 var(--muted)); }
-.mob-inventory input:enabled:hover + .mob-slot { color: var(--ink); border-color: var(--accent); }
-.mob-inventory input:checked + .mob-slot { color: var(--ink); border-color: var(--accent); box-shadow: inset 0 -2px var(--accent); font-weight: 650; }
-.mob-inventory input:focus-visible + .mob-slot { outline: 2px solid var(--accent); outline-offset: 2px; }
-.mob-inventory input:disabled { cursor: default; }
-.mob-inventory input:disabled + .mob-slot { opacity: .55; }
 .mob-activity { margin-block: 16px 8px; }
 
 @media (821px <= width <= 1024px) {
@@ -119,6 +95,9 @@
 }
 
 @media (max-width: 500px) {
+  [data-studio="blockworks"] .preview-toolbar { gap: 8px; }
+  [data-studio="blockworks"] .window-title { white-space: nowrap; }
+  [data-studio="blockworks"] .preview-toolbar .mode-control span { min-width: 34px; padding: 0; gap: 0; font-size: 0; }
   .studio-intro { flex-wrap: wrap; gap: 7px; margin-block: 15px 17px; }
   .studio-settings, .school-controls, .studio-note { padding: 16px; }
   .parent-control, .add-agent-control { width: 100%; }
