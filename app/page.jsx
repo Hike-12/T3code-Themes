@@ -1,0 +1,71 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowDown, ArrowUpRight } from 'lucide-react';
+import { GalleryPreview } from './components/theme-preview';
+import { DownloadAction } from './components/ui';
+import { themes } from './themes';
+
+export default function Collection() {
+  return (
+    <main id="main">
+      <section className="collection-hero wrap" aria-labelledby="page-title">
+        <div className="hero-copy">
+          <h1 id="page-title">Themes for <em>T3 Code</em></h1>
+          <p>I’ve been using T3 Code a lot lately, so I made a couple of themes for it. One has koi that swim while you work. The other is a simple grain texture.</p>
+          <div className="hero-actions">
+            <a className="download" href="#themes">Explore themes <ArrowDown size={16} aria-hidden="true" /></a>
+            <a className="text-link" href="#install">How to install</a>
+          </div>
+        </div>
+        <div className="hero-art">
+          <Image src="/assets/koi-cover.webp" alt="Two red and white koi in dark blue water" fill preload sizes="(max-width: 1240px) 100vw, 1240px" />
+        </div>
+      </section>
+
+      <section id="themes" className="gallery wrap" aria-labelledby="gallery-title">
+        <div className="collection-bar">
+          <h2 id="gallery-title">Collection</h2>
+        </div>
+        <div className="theme-grid">
+          {Object.entries(themes).map(([slug, theme]) => (
+            <article className="theme" aria-labelledby={slug + '-title'} key={slug}>
+              <div className="theme-info">
+                <header>
+                  <h3 id={slug + '-title'}>{theme.name}</h3>
+                  <p>{theme.description}</p>
+                </header>
+                <div className="theme-actions">
+                  <Link className="open-theme" href={'/' + slug}>{theme.action} <ArrowUpRight size={15} aria-hidden="true" /></Link>
+                  <DownloadAction href={theme.download} />
+                </div>
+              </div>
+              <GalleryPreview slug={slug} />
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="install" className="install wrap" aria-labelledby="install-title">
+        <h2 id="install-title">Install a theme</h2>
+        <ol className="install-steps">
+          <li><strong>Download</strong><span>Get the JSON for either theme, or customize it and download your version.</span></li>
+          <li><strong>Import</strong><span>In T3 Code, go to <b>Settings → Appearance</b> and choose <b>Import a file</b>.</span></li>
+          <li><strong>Apply</strong><span>Open your JSON and select the theme in the picker.</span></li>
+        </ol>
+        <p className="install-note">Switch between Light and Dark in <strong>Settings → Appearance</strong>.</p>
+        <details className="screenshots">
+          <summary>Earlier T3 Code screenshots</summary>
+          <div className="screenshot-grid">
+            <Image src="/screenshots/dark-texture-dark.webp" width={924} height={668} sizes="(max-width: 740px) 100vw, 45vw" alt="T3 Code with the original charcoal grain" />
+            <Image src="/screenshots/dark-texture-light.webp" width={924} height={668} sizes="(max-width: 740px) 100vw, 45vw" alt="T3 Code with the original pale gray grain" />
+          </div>
+        </details>
+      </section>
+
+      <section id="about" className="about wrap" aria-labelledby="about-title">
+        <h2 id="about-title">Share a theme</h2>
+        <p>Made a theme you’d like to share? <a href="https://github.com/wrestle-R/T3code-Themes/pulls">Open a pull request</a> with the theme file and any images it uses.</p>
+      </section>
+    </main>
+  );
+}

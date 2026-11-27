@@ -15,10 +15,9 @@
 body { margin: 0; background: var(--canvas); color: var(--text); }
 .demo {
   width: 100%; height: 100dvh; overflow: hidden;
-  display: grid; place-items: center; padding-bottom: 6vh;
 }
-.new-thread { width: min(82%, 530px); }
-h1 { margin: 0; text-align: center; font-size: clamp(17px, 3.2vw, 25px); font-weight: 440; letter-spacing: -.04em; line-height: 1.16; text-wrap: balance; }
+.new-thread { width: min(78%, 490px); }
+h1 { margin: 0; text-align: center; font-size: clamp(18px, 4.1vw, 28px); font-weight: 440; letter-spacing: -.04em; line-height: 1.16; text-wrap: balance; }
 h1 strong { font-weight: 600; }
 .workspace-hint { margin: 5px 0 19px; color: var(--muted); font-size: 11px; text-align: center; }
 .composer { border: 1px solid var(--border); border-radius: 12px; padding: 12px 12px 8px; background: var(--composer); color: var(--muted); font-size: 12px; }
@@ -31,19 +30,20 @@ h1 strong { font-weight: 600; }
 .checkout { justify-content: space-between; margin: 6px 10px 0; font-size: 10px; color: var(--muted); }
 :root[data-paused] .demo::before,
 :root[data-paused] .demo::after { animation-play-state: paused !important; }
-:root .chat-canvas {
-  position: absolute;
-  inset: 0;
+.chat-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  padding-bottom: 6vh;
+  padding-bottom: min(6vh, 28px);
 }
 :root[data-paused] [data-assistant-citation-viewport]::before,
 :root[data-paused] [data-assistant-citation-viewport]::after { animation-play-state: paused !important; }
-.demo:has([data-subagent-group]) .new-thread { transform: translateY(-27px); }
+.demo:has([data-subagent-group]) .new-thread { transform: translateY(-12px); }
 [data-subagent-group].studio-group {
   position: absolute;
-  bottom: 6%;
+  bottom: 4%;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -59,4 +59,9 @@ h1 strong { font-weight: 600; }
 }
 .demo:has([data-subagent-group]) :is(h1, .workspace-hint, .checkout) {
   text-shadow: 0 0 4px var(--canvas), 0 0 8px var(--canvas);
+}
+
+@media (max-height: 300px) {
+  .composer-tools { margin-top: 12px; }
+  .workspace-hint { margin-bottom: 12px; }
 }

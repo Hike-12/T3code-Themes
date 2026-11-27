@@ -1,0 +1,84 @@
+.studio { padding-bottom: 54px; }
+.studio-intro { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-block: 28px 30px; }
+.studio-intro h1 { font-size: clamp(58px, 8.4vw, 92px); margin-block: 9px 12px; }
+.studio-intro p { color: var(--muted); }
+.install-link { flex: none; }
+.studio-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 350px); gap: 22px; align-items: start; }
+.studio-stage { min-width: 0; }
+.studio .preview { margin: 0; }
+.studio-viewport { height: clamp(325px, 35vw, 455px); aspect-ratio: auto; }
+
+.studio-settings, .school-controls, .studio-note {
+  padding: 22px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.studio-settings h2, .studio-note h2 { font: 400 32px/1 var(--display); letter-spacing: -.024em; }
+.studio fieldset:not(.mode-control) { border: 0; min-width: 0; margin: 0; padding: 0; }
+.settings-controls > fieldset:not(.mode-control) { margin-top: 19px; padding: 5px 0 0; border-top: 1px solid var(--line); }
+.settings-controls legend { font-size: 13px; font-weight: 650; padding: 0 9px 0 0; color: var(--ink); }
+.studio-settings form { margin-top: 4px; }
+.studio-settings label { font-size: 13px; }
+.studio-settings input { min-width: 0; }
+.studio-settings input[type="color"] { width: 42px; height: 40px; border: 1px solid var(--line); border-radius: 7px; padding: 3px; background: var(--panel); cursor: pointer; }
+.studio-settings input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.studio-settings input[type="color"]::-webkit-color-swatch { border: 1px solid var(--line); border-radius: 4px; }
+.color-setting { min-height: 46px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 7px; align-items: center; }
+.color-setting input[type="text"] { width: 78px; min-height: 40px; font: 12px var(--mono); border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--code); padding: 4px 8px; }
+.color-setting input[aria-invalid="true"] { border-color: #c95746; }
+.hex-error { grid-column: 1 / -1; color: var(--ink); font-size: 12px; margin-bottom: 5px; }
+.hex-error:empty { display: none; }
+.studio-layout:has([data-preview-appearance="dark"]) [data-color-appearance="dark"] > label,
+.studio-layout:has([data-preview-appearance="light"]) [data-color-appearance="light"] > label { font-weight: 650; }
+
+.range-field { display: grid; grid-template-columns: 1fr auto; align-items: center; padding-top: 6px; font-size: 13px; }
+.range-field output { color: var(--muted); font: 12px var(--mono); }
+.range { position: relative; display: flex; align-items: center; grid-column: 1 / -1; width: 100%; height: 31px; user-select: none; touch-action: none; cursor: pointer; }
+.range-track { position: relative; flex: 1; height: 5px; border-radius: 5px; background: var(--line); }
+.range-fill { position: absolute; height: 100%; border-radius: inherit; background: var(--accent); }
+.range-thumb { display: block; width: 17px; height: 17px; border: 2px solid var(--accent); border-radius: 50%; background: var(--panel); }
+.range[data-disabled] { opacity: .5; cursor: default; }
+.switch-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+.switch { position: relative; display: inline-flex; align-items: center; padding: 2px; width: 42px; height: 25px; border: 1px solid var(--line); border-radius: 20px; background: var(--code); }
+.switch[data-state="checked"] { background: var(--action); }
+.switch-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); transition: transform .16s; }
+.switch[data-state="checked"] .switch-thumb { transform: translateX(17px); background: var(--action-ink); }
+
+.studio-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; border-top: 1px solid var(--line); padding-top: 17px; }
+.studio-actions .download { flex: 1; }
+.studio button:disabled { color: var(--muted); background: var(--code); border-color: var(--line); cursor: default; }
+.studio-fallback { margin-top: 12px; }
+.studio-fallback a { display: table; margin-top: 8px; }
+
+.school-controls { margin-top: 16px; }
+.school-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.school-heading h2 { font-size: 17px; line-height: 1.2; letter-spacing: -.02em; }
+.school-count { border-radius: 20px; padding: 3px 10px; font: 12px/1.6 var(--mono); white-space: nowrap; background: var(--code); color: var(--muted); }
+.school-description { margin-block: 7px 17px; color: var(--muted); font-size: 13px; }
+.school-fields { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 20px; }
+.parent-control, .add-agent-control { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.parent-control select { min-height: 44px; padding: 5px 9px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.add-agents { display: flex; flex-wrap: wrap; gap: 6px; }
+.add-agents .open-theme { gap: 5px; }
+.agent-list { list-style: none; margin: 15px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.agent-list li { margin: 0; padding: 7px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+.agent-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.agent-provider { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.agent-provider::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #617967; }
+.agent-provider[data-provider="Claude"]::before { background: #d97757; }
+.agent-provider[data-provider="Gemini"]::before { background: #5b87bf; }
+.studio-note { margin-top: 22px; }
+.studio-note ol { margin-bottom: 0; }
+
+@media (max-width: 820px) {
+  .studio-layout { grid-template-columns: 1fr; }
+  .studio-settings input:is([type="color"], [type="text"]), .range { min-height: 44px; }
+  .color-setting { margin-block: 7px; }
+}
+
+@media (max-width: 500px) {
+  .studio-intro { flex-wrap: wrap; gap: 7px; margin-block: 15px 17px; }
+  .studio-settings, .school-controls, .studio-note { padding: 16px; }
+  .parent-control { width: 100%; }
+}
