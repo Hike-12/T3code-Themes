@@ -7,6 +7,9 @@
 .studio-stage { min-width: 0; }
 .studio .preview { margin: 0; }
 .studio-viewport { flex: none; height: clamp(310px, 32vw, 420px); aspect-ratio: auto; }
+[data-studio="koi-pond"] .studio-intro { margin-block: 22px 20px; }
+[data-studio="koi-pond"] .studio-intro h1 { font-size: clamp(34px, 3.5vw, 48px); }
+[data-studio="koi-pond"] .studio-viewport { height: clamp(290px, 29vw, 380px); }
 
 .studio-settings, .school-controls, .studio-note {
   padding: 22px;
@@ -60,14 +63,15 @@
 .parent-control, .add-agent-control { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .parent-control select { min-height: 44px; padding: 5px 9px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
 .add-agents { display: flex; flex-wrap: wrap; gap: 6px; }
-.add-agents .open-theme { gap: 5px; }
+.add-agents .open-theme { gap: 7px; }
 .agent-list { list-style: none; margin: 15px 0 0; padding: 0; border-top: 1px solid var(--line); }
 .agent-list li { margin: 0; padding: 7px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
 .agent-list li:last-child { border-bottom: 0; padding-bottom: 0; }
 .agent-provider { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
-.agent-provider::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
-.agent-provider[data-provider="Claude"]::before { background: #d97757; }
-.agent-provider[data-provider="Gemini"]::before { background: #5b87bf; }
+.provider-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+.provider-dot[data-provider="Claude"] { background: #b45e43; }
+.provider-dot[data-provider="Gemini"] { background: #3269c8; }
+.provider-dot[data-provider="OpenCode"] { background: #94566c; }
 .studio-note { margin-top: 22px; }
 .studio-note ol { margin-bottom: 0; }
 
@@ -80,5 +84,6 @@
 @media (max-width: 500px) {
   .studio-intro { flex-wrap: wrap; gap: 7px; margin-block: 15px 17px; }
   .studio-settings, .school-controls, .studio-note { padding: 16px; }
-  .parent-control { width: 100%; }
+  .parent-control, .add-agent-control { width: 100%; }
+  .add-agents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

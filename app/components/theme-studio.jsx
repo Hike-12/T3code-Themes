@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowDown, ArrowLeft, Plus, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowLeft, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { pondProviders, themes } from '../themes';
 import { ThemePreview, useTheme } from './theme-preview';
@@ -77,7 +77,7 @@ function SubagentTest({ parent, setParent, agents, running, spawn, finish, disab
         <h2 id="school-title">Test subagents</h2>
         <span className="school-count" role="status">{running} of {agentLimit} running</span>
       </header>
-      <p className="school-description">Add a subagent to see its fish swim in the main thread. Finish it to watch the fish fade out.</p>
+      <p className="school-description">Add up to three subagents to the main thread preview.</p>
       <fieldset className="school-fields" disabled={disabled}>
         <label className="parent-control">Main thread model
           <select value={parent} onChange={event => setParent(event.target.value)}>
@@ -89,7 +89,7 @@ function SubagentTest({ parent, setParent, agents, running, spawn, finish, disab
           <div className="add-agents">
             {pondProviders.map(provider => (
               <button className="open-theme" type="button" key={provider} onClick={() => spawn(provider)} disabled={running >= agentLimit} aria-label={'Add ' + provider + ' subagent'}>
-                <Plus size={15} aria-hidden="true" /> {provider}
+                <span className="provider-dot" data-provider={provider} aria-hidden="true" /> {provider}
               </button>
             ))}
           </div>
@@ -99,7 +99,7 @@ function SubagentTest({ parent, setParent, agents, running, spawn, finish, disab
         <ul className="agent-list" aria-label="Running subagents">
           {agents.filter(agent => agent.running).map(agent => (
             <li key={agent.id}>
-              <span className="agent-provider" data-provider={agent.provider}>{agent.provider}</span>
+              <span className="agent-provider"><span className="provider-dot" data-provider={agent.provider} aria-hidden="true" />{agent.provider}</span>
               <button className="open-theme finish-agent" type="button" onClick={() => finish(agent.id)} aria-label={'Finish ' + agent.provider + ' subagent'}>Finish</button>
             </li>
           ))}
@@ -172,10 +172,10 @@ export function ThemeStudio({ slug }) {
   }
 
   return (
-    <main className="wrap studio" id="main">
+    <main className="wrap studio" id="main" data-studio={slug}>
       <header className="studio-intro">
         <div>
-          <Link href="/#themes" className="text-link back-link"><ArrowLeft size={16} aria-hidden="true" /> Collection</Link>
+          {!isPond && <Link href="/#themes" className="text-link back-link"><ArrowLeft size={16} aria-hidden="true" /> Collection</Link>}
           <h1>{theme.name}</h1>
           <p>{theme.studioDescription}</p>
         </div>
