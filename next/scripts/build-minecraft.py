@@ -16,7 +16,7 @@ def sprite_url(image):
     image.save(out, 'PNG', optimize=True)
     return data_url(out.getvalue(), 'image/png')
 
-def mini_mob(key):
+def mini_mob(key, tier):
     # Three 16px frames use the same silhouette and change the eyes and pose.
     colors = {
         'openai': ('#d6cec0', '#a39b89', '#738856', '#643e36'),
@@ -65,8 +65,15 @@ def mini_mob(key):
                 draw.rectangle((7, 6, 8, 9), fill=shade)
         eye_y = 6 + (stage == 1)
         if stage == 2:
-            draw.line((12, 14, 15, 9), fill='#b9845d')
-            draw.line((13, 8, 15, 9), fill='#6acfe8')
+            if tier == 'heavy':
+                draw.line((11, 14, 15, 7), fill='#292237', width=2)
+                draw.line((12, 12, 15, 7), fill='#a481da')
+                draw.line((11, 10, 14, 12), fill='#c4a0ec')
+                draw.point((15, 6), fill='#e6baff')
+            else:
+                draw.line((12, 14, 15, 9), fill='#b9845d')
+                draw.line((13, 8, 15, 9), fill='#b7a394' if tier == 'fast' else '#6acfe8')
+                draw.point((15, 10), fill='#837568' if tier == 'fast' else '#47a9b7')
         for x in (5, 9):
             draw.rectangle((x, eye_y - (stage == 2), x + 1, eye_y), fill=eyes)
         # Offset the silhouette by one source pixel to shade the right and bottom faces.
@@ -81,7 +88,11 @@ def mini_mob(key):
 
 
 mobs = ('openai', 'claude', 'gemini', 'opencode', 'creeper', 'fox')
-assets = {mob: sprite_url(mini_mob(mob)) for mob in mobs}
+assets = {
+    mob + suffix: sprite_url(mini_mob(mob, tier))
+    for mob in mobs
+    for tier, suffix in [('standard', ''), ('fast', '-fast'), ('heavy', '-heavy')]
+}
 
 stone = Image.new('RGB', (16, 16), '#121417')
 draw = ImageDraw.Draw(stone)

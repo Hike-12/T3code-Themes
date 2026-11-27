@@ -16,6 +16,8 @@ function configureTheme(base, values, slug) {
     const overrides = [];
     if (Object.hasOwn(minecraftMobs, values.mob)) {
       overrides.push(`--mc-picked-buddy: var(--mc-${values.mob});`);
+      overrides.push(`--mc-picked-fast: var(--mc-${values.mob}-fast);`);
+      overrides.push(`--mc-picked-heavy: var(--mc-${values.mob}-heavy);`);
     }
     if (values.still) overrides.push('--theme-motion-state: paused;');
     return overrides.length ? { ...base, css: base.css + `\n:root { ${overrides.join(' ')} }\n` } : base;
@@ -270,6 +272,13 @@ export function ThemeStudio({ slug }) {
                     <label className="parent-control mob-activity">Main thread model
                       <select value={parent} onChange={event => setParent(event.target.value)}>
                         {pondProviders.map(provider => <option key={provider}>{provider}</option>)}
+                        <optgroup label="Model tier examples">
+                          <option value="Claude|Haiku 4.5">Claude Haiku 4.5</option>
+                          <option value="Gemini|Flash">Gemini Flash</option>
+                          <option value="Claude|Sonnet 4.6">Claude Sonnet 4.6</option>
+                          <option value="OpenAI|GPT-5">OpenAI GPT-5</option>
+                          <option value="OpenAI|6.2 Sol Medium">OpenAI 6.2 Sol Medium</option>
+                        </optgroup>
                       </select>
                     </label>
                     <label className="parent-control mob-activity">Preview activity

@@ -4,7 +4,8 @@ const { chromium } = require('playwright');
 const path = require('node:path');
 
 async function run(browser) {
-  const theme = JSON.parse(await readFile(path.join(__dirname, '../public/downloads/blockworks.json'), 'utf8'));
+  const theme = JSON.parse(await readFile(process.env.MINECRAFT_THEME_FILE ||
+    path.join(__dirname, '../public/downloads/blockworks.json'), 'utf8'));
   assert.equal(theme.canvas, '#121316');
   assert.ok(theme.css.length < 100000);
   assert.doesNotMatch(theme.css, /--mc-portal|t3-minecraft-roam/);
@@ -18,17 +19,21 @@ async function run(browser) {
     </style><aside data-slot="sidebar">
       <button data-sidebar-row="shelf:working">Working</button>
       <button data-sidebar-row="shelf:settled">Settled</button>
-      <div data-thread-item hidden><button data-sidebar-row="thread:2">Another thread<span class="bg-sky-500"></span></button></div>
+      <div data-thread-item hidden><button data-sidebar-row="thread:2">Another thread<span class="text-info-foreground"><svg></svg>Working 37s</span></button></div>
     </aside>
     <main data-chat-canvas>
       <header data-chat-header><button aria-label="Open in VS Code"><svg><path /></svg></button>
         <button aria-label="Add project script"><svg><path /></svg></button></header>
-      <div data-workspace-area="conversation"><div data-timeline-row-kind="work"></div></div>
+      <div data-workspace-area="conversation"><div data-timeline-row-kind="work"></div>
+        <p data-user-message-bubble>Review this change</p><pre class="chat-markdown-codeblock">const ready = true;</pre></div>
       <div data-workspace-area="composer"><button type="button">Details</button><form data-chat-composer-form>
         <div data-chat-composer-main-surface><label>Ask anything <input></label>
           <button type="button" aria-label="Attach files"><svg><path /></svg></button>
           <button type="button" id="stop" hidden aria-label="Stop generation"><svg></svg></button>
           <button type="button" aria-label="Choose branch"><svg class="lucide-git-branch"><path /></svg></button>
+          <span data-composer-mention-chip><svg><path /></svg></span>
+          <span data-composer-skill><svg><path /></svg></span>
+          <div data-composer-command-drawer><div data-slot="command-item"><svg class="lucide-terminal"><path /></svg></div></div>
           <span data-chat-provider-model-picker aria-label="Claude Opus"></span>
         </div></form></div>
       <button id="diff"><span class="text-diff-addition-foreground">+84</span> <span class="text-diff-deletion-foreground">-168</span></button>
@@ -76,6 +81,15 @@ async function run(browser) {
     assert.match(await page.getByRole('button', { name }).locator('svg').evaluate(el =>
       getComputedStyle(el).backgroundImage), /data:image\/png;base64/);
   }
+  for (const selector of ['[data-composer-mention-chip] svg', '[data-composer-skill] svg', '[data-slot="command-item"] svg']) {
+    assert.match(await page.locator(selector).evaluate(el => getComputedStyle(el).backgroundImage), /data:image\/png;base64/);
+  }
+  for (const selector of ['[data-user-message-bubble]', '.chat-markdown-codeblock', '#diff']) {
+    assert.doesNotMatch(await page.locator(selector).evaluate(el => getComputedStyle(el).fontFamily), /Minecraft UI/);
+  }
+  assert.equal(await page.locator('.chat-markdown-codeblock').evaluate(el => getComputedStyle(el).borderTopWidth), '2px');
+  assert.equal(await page.locator('.text-diff-addition-foreground').evaluate(el => getComputedStyle(el).color), 'rgb(105, 214, 161)');
+  assert.equal(await page.locator('.text-diff-deletion-foreground').evaluate(el => getComputedStyle(el).color), 'rgb(255, 133, 133)');
 
   await dock.evaluate((el, markup) => el.insertAdjacentHTML('beforeend', markup), stopMarkup);
   assert.equal((await buddy()).pose, '100%');
@@ -83,6 +97,23 @@ async function run(browser) {
   assert.match((await buddy()).particles, /data:image\/png;base64/);
   assert.equal((await buddy()).badge, '"◆"');
   assert.equal(await page.locator('#stop').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(217, 43, 43)');
+  const picker = page.locator('[data-chat-provider-model-picker]');
+  for (const [label, sprite] of [
+    ['Haiku 4.5', '--mc-claude-fast'], ['Gemini 2.5 Flash', '--mc-gemini-fast'],
+    ['GPT-5 Mini', '--mc-openai-fast'], ['GPT-5 Nano', '--mc-openai-fast'],
+    ['Sonnet 4.6', '--mc-claude'], ['GPT-5', '--mc-openai'], ['Gemini 2.5', '--mc-gemini'],
+    ['Opus 4.6', '--mc-claude-heavy'], ['Gemini 2.5 Pro', '--mc-gemini-heavy'],
+    ['OpenAI o1', '--mc-openai-heavy'], ['OpenAI o3', '--mc-openai-heavy'],
+    ['6.2 Sol, Medium', '--mc-openai-heavy'], ['6.1 Sol High', '--mc-openai-heavy'],
+  ]) {
+    await picker.evaluate((el, value) => el.setAttribute('aria-label', value), label);
+    assert.equal(await dock.evaluate((el, property) => getComputedStyle(el, '::after').backgroundImage ===
+      getComputedStyle(document.documentElement).getPropertyValue(property).trim(), sprite), true, label);
+  }
+  await page.setViewportSize({ width: 320, height: 600 });
+  await page.locator('#stop').click({ trial: true });
+  assert.equal(await page.getByRole('button', { name: 'Choose branch' }).evaluate(el =>
+    getComputedStyle(el).color), 'rgb(56, 189, 248)');
   const row = page.locator('[data-timeline-row-kind]');
   await row.evaluate(el => { el.innerHTML = '<div data-v2-item-type="reasoning"><span class="live-tool-shine">Thinking</span></div>'; });
   assert.equal((await buddy()).pose, '50%');
@@ -108,6 +139,7 @@ async function run(browser) {
   await page.locator('[data-thread-now-line]').evaluate(el => el.remove());
   await page.locator('[data-thread-item]').evaluate(el => { el.hidden = false; });
   assert.equal((await buddy()).badge, '"z"');
+  assert.equal(await page.locator('[data-thread-item] .text-info-foreground').evaluate(el => getComputedStyle(el).color), 'rgb(128, 255, 32)');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal((await buddy()).motion, 'none');
 

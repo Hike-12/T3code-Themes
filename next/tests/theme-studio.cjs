@@ -387,7 +387,20 @@ async function testBlockworks(browser) {
   await activity.selectOption('Coding');
   assert.equal((await look()).animation, 'minecraft-working');
   assert.equal((await look()).position, '100%');
+  const gear = async (modelName, expected) => {
+    await model.selectOption(modelName);
+    assert.equal(await dock.evaluate((el, property) =>
+      getComputedStyle(el, '::after').backgroundImage ===
+      getComputedStyle(el.ownerDocument.documentElement).getPropertyValue(property).trim(), expected), true);
+  };
+  await gear('Claude|Haiku 4.5', '--mc-claude-fast');
+  await gear('Claude|Sonnet 4.6', '--mc-claude');
+  await gear('OpenAI|6.2 Sol Medium', '--mc-claude-heavy');
   assert.deepEqual(await exportedTheme(page), savedMob);
+  await buddy.selectOption('auto');
+  await gear('Gemini|Flash', '--mc-gemini-fast');
+  await gear('Gemini', '--mc-gemini-heavy');
+  await buddy.selectOption('claude');
   for (const [state, badge] of [['Approval', '!'], ['Error', '\u00d7'], ['Background', 'z']]) {
     await activity.selectOption(state);
     assert.equal((await look()).badge, JSON.stringify(badge));
@@ -402,7 +415,8 @@ async function testBlockworks(browser) {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
-  assert.equal((await look()).sprite === sprites.Claude, true);
+  assert.equal(await dock.evaluate(el => getComputedStyle(el, '::after').backgroundImage ===
+    getComputedStyle(el.ownerDocument.documentElement).getPropertyValue('--mc-claude-heavy').trim()), true);
 
   await page.getByLabel('Preview conversation state').selectOption('conversation');
   for (const width of [320, 390, 768, 1024, 1440]) {

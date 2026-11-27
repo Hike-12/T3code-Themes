@@ -87,6 +87,7 @@ function School({ agents }) {
 
 function PreviewConversation({ slug, parent, agents, conversation, activity, mob, onMobChange }) {
   const isMinecraft = slug === 'blockworks';
+  const [provider, model = models[parent]] = parent.split('|');
   const working = activity === 'Coding' || activity === 'Reasoning';
   const status = { Idle: 'Settled', Coding: 'Working 37s', Reasoning: 'Thinking', Approval: 'Needs approval', Error: 'Tool failed', Background: 'Other thread working' };
   return (
@@ -108,7 +109,7 @@ function PreviewConversation({ slug, parent, agents, conversation, activity, mob
             {isMinecraft ? <div data-chat-composer-body="">Ask anything…</div> : <span>Ask anything…</span>}
             <div className="composer-tools" aria-hidden={!onMobChange || undefined}>
               <Paperclip size={14} aria-hidden="true" />
-              <span data-chat-provider-model-picker="" aria-label={`${parent} ${models[parent]}`}>{models[parent]}</span>
+              <span data-chat-provider-model-picker="" aria-label={`${provider} ${model}`}>{model}</span>
               {onMobChange && <select className="mob-select" aria-label="Mob buddy" value={mob} onChange={event => onMobChange(event.target.value)}>
                 <option value="auto">Match model</option>
                 {Object.entries(minecraftMobs).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
