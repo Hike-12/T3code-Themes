@@ -85,6 +85,17 @@ async function run(browser) {
   assert.equal((await buddy()).badge, '"×"');
   await row.evaluate(el => { el.insertAdjacentHTML('afterend', '<div data-timeline-row-kind="user">Try again</div>'); });
   assert.equal((await buddy()).motion, 'minecraft-idle');
+  assert.equal(await dock.evaluate(el => {
+    const idle = el.getAnimations({ subtree: true }).find(animation => animation.animationName === 'minecraft-idle');
+    idle.pause();
+    idle.currentTime = 3800;
+    const pose = getComputedStyle(el, '::after').backgroundPositionX;
+    idle.cancel();
+    return pose;
+  }), '50%');
+  await dock.evaluate(el => { el.insertAdjacentHTML('beforebegin', '<div data-thread-now-line role="alert"><span><svg class="text-warning-foreground"></svg></span>Agent not responding to Stop</div>'); });
+  assert.equal((await buddy()).motion, 'minecraft-hurt');
+  await page.locator('[data-thread-now-line]').evaluate(el => el.remove());
   await page.locator('[data-thread-item]').evaluate(el => { el.hidden = false; });
   assert.equal((await buddy()).badge, '"z"');
   await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -127,7 +127,9 @@
   --mc-indicator: "◆";
   --mc-indicator-ink: var(--mc-xp);
 }
-[data-chat-canvas]:where([data-mc-activity="Error"], :has([data-timeline-row-kind]:last-child [data-v2-item-type="error"]:not([data-side-chat-pane] *))) {
+[data-chat-canvas]:where([data-mc-activity="Error"],
+  :has([data-timeline-row-kind]:last-child [data-v2-item-type="error"]:not([data-side-chat-pane] *)),
+  :has([data-thread-now-line][role="alert"]:not([data-side-chat-pane] *) > span:first-child > svg.text-warning-foreground)) {
   --mc-pose: 50%;
   --mc-move: minecraft-hurt .38s steps(1, end) 2;
   --mc-indicator: "×";
@@ -170,7 +172,12 @@
   color: var(--mc-indicator-ink);
   font: 10px/1 ui-monospace, monospace;
 }
-@keyframes minecraft-idle { 76% { translate: 0 -1px; } 88% { translate: 0 0; } }
+@keyframes minecraft-idle {
+  76% { translate: 0 -1px; }
+  88% { translate: 0 0; background-position-x: var(--mc-pose); }
+  93% { background-position-x: 50%; }
+  97% { background-position-x: var(--mc-pose); }
+}
 @keyframes minecraft-working { 50% { translate: 1px 0; } }
 @keyframes minecraft-hurt { 0% { filter: sepia(1) saturate(9) hue-rotate(318deg); } 55% { filter: none; } }
 @media (prefers-reduced-motion: reduce) {
