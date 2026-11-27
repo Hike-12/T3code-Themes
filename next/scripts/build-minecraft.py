@@ -17,7 +17,14 @@ def embed(image, quality=76):
     return 'url("data:image/webp;base64,' + b64encode(out.getvalue()).decode() + '")'
 
 providers = {'openai':'iron_golem','claude':'copper_golem','gemini':'allay','opencode':'enderman'}
-assets = {key:embed(renderer.sprite(value)) for key,value in providers.items()}
+sprites = {key: renderer.sprite(value) for key, value in providers.items()}
+assets = {key: embed(sprite) for key, sprite in sprites.items()}
+portraits = ROOT / 'public/assets/blockworks'
+portraits.mkdir(exist_ok=True)
+for key, sprite in sprites.items():
+    frame = sprite.crop((0, 0, sprite.height, sprite.height))
+    frame = frame.crop(frame.getbbox())
+    frame.save(portraits / f'{key}.webp', lossless=True)
 # Only a few native-size purple flecks; used during disappearance and arrival.
 mist = Image.new('RGBA',(128*renderer.FRAMES,128))
 for f in range(renderer.FRAMES):
@@ -33,6 +40,12 @@ chat = '[data-workspace-area="conversation"]:not([data-side-chat-pane] *)'
 canvas = '[data-chat-canvas]'
 viewport = ' > [data-assistant-citation-viewport]'
 composer = '[data-workspace-area="composer"]'
+main_composer = '[data-chat-composer-main-surface]'
+footer = '[data-chat-composer-footer]'
+now_line = '[data-thread-now-line]'
+reasoning = '[data-v2-item-type="reasoning"]'
+main_chat_only = ':not([data-side-chat-pane] *)'
+generating = f':has(> {composer} button:is([aria-label="Stop generation"], [aria-label="Stopping"]))'
 picker = '[data-chat-provider-model-picker]:not([data-side-chat-pane] *)'
 active = ':has(.messages-timeline-scroll [data-timeline-row-kind])'
 group = '[data-subagent-group]:not([data-side-chat-pane] *)'
@@ -58,14 +71,17 @@ css+=f'''
 {chat}{viewport} {{ position: relative; }}
 {all_slots} {{
   position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none;
-  --mc-base-size: clamp(68px, 15cqh, 148px); --mc-size: var(--mc-base-size);
+  --mc-base-size: clamp(68px, 15cqh, 148px); --mc-actor-size: var(--mc-base-size);
+  --mc-size: var(--mc-actor-size);
   --mc-sprite: var(--mc-openai); --mc-route: t3-minecraft-roam;
   --mc-time: 76s; --mc-gait: 2.4s;
   --mc-gutter: max(12px, calc((100cqw - min(var(--mc-content-width, 880px), 84cqw)) / 2));
   --mc-a: 10px; --mc-b: calc(100cqw - var(--mc-size) - clamp(50px, 10cqw, 180px));
   --mc-y: calc(100cqh - var(--mc-size) - 12px); --mc-rise: 4cqh;
   width: var(--mc-size); height: var(--mc-size); image-rendering: pixelated;
-  background: var(--mc-sprite) no-repeat 0 0 / 800% 100%;
+  --mc-actor-sprite: var(--mc-sprite);
+  background: var(--mc-actor-sprite) no-repeat 0 0 / 800% 100%;
+  filter: var(--mc-provider-filter, none);
   transform: translate(var(--mc-a), var(--mc-y));
   animation: var(--mc-route) var(--mc-time) linear infinite,
              t3-minecraft-feet var(--mc-gait) steps(8, end) infinite;
@@ -104,16 +120,42 @@ for i,(host,pseudo) in enumerate(slots):
             if i==1:matches.append(standalone+working+f' :is({marker})')
             selectors[name] += [select_slot(host, match, pseudo) for match in matches]
 
-settings={
-'claude':'--mc-sprite: var(--mc-claude); --mc-base-size: clamp(42px, 8.5cqh, 86px); --mc-gait: 1.7s; --mc-time: 83s;',
-'gemini':'--mc-sprite: var(--mc-gemini); --mc-base-size: min(clamp(24px, 7.5cqh, 66px), var(--mc-flight-width, 6cqw)); --mc-route: t3-minecraft-fly; --mc-time: 46s; --mc-gait: .8s;',
-'opencode':'--mc-sprite: var(--mc-opencode); --mc-base-size: clamp(82px, 18cqh, 176px); --mc-route: t3-minecraft-enderman; --mc-time: 120s; --mc-gait: 2s; filter: var(--mc-rim);',
+defaults = {
+    'base-size': 'clamp(68px, 15cqh, 148px)',
+    'route': 't3-minecraft-roam', 'time': '76s', 'gait': '2.4s', 'provider-filter': 'none',
 }
-for name,rule in settings.items():css+=',\n'.join(selectors[name])+' { '+rule+' }\n'
+settings = {
+    'openai': {},
+    'claude': {'base-size': 'clamp(42px, 8.5cqh, 86px)', 'gait': '1.7s', 'time': '83s'},
+    'gemini': {'base-size': 'min(clamp(24px, 7.5cqh, 66px), var(--mc-flight-width, 6cqw))',
+               'route': 't3-minecraft-fly', 'time': '46s', 'gait': '.8s'},
+    'opencode': {'base-size': 'clamp(82px, 18cqh, 176px)', 'route': 't3-minecraft-enderman',
+                 'time': '120s', 'gait': '2s', 'provider-filter': 'var(--mc-rim)'},
+}
+for name, overrides in settings.items():
+    preset = {**defaults, **overrides, 'sprite': f'var(--mc-{name})'}
+    css += ':root { ' + ' '.join(f'--mc-{name}-{key}: {value};' for key, value in preset.items()) + ' }\n'
+    if selectors[name]:
+        properties = ' '.join(f'--mc-{key}: var(--mc-{name}-{key});' for key in preset)
+        css += ',\n'.join(selectors[name]) + ' { ' + properties + ' }\n'
+        label = ':is([aria-label*="gemini" i], [aria-label*="antigravity" i])' if name == 'gemini' else f'[aria-label*="{name}" i]'
+        css += (f'{canvas}:has(> {composer} {picker}{label}),\n'
+                f'{canvas}:has(> {composer} {picker} :is({markers[name]})) '
+                f'{{ --mc-status-sprite: var(--mc-{name}); }}\n')
+
+css+=f'''
+{chat}::before {{
+  --mc-actor-size: var(--mc-picked-base-size, var(--mc-base-size));
+  --mc-actor-sprite: var(--mc-picked-sprite, var(--mc-sprite));
+  animation-name: var(--mc-picked-route, var(--mc-route)), t3-minecraft-feet;
+  animation-duration: var(--mc-picked-time, var(--mc-time)), var(--mc-picked-gait, var(--mc-gait));
+  filter: var(--mc-picked-provider-filter, var(--mc-provider-filter, none));
+}}
+'''
 # A real conversation has a fixed-width content column. All ground routes use
 # the free gutter, with separate vertical lanes. Never put a mob behind text.
 css+=',\n'.join(h.replace(chat,chat+active,1)+'::'+p for h,p in slots)+''' {
-  --mc-size: min(var(--mc-base-size), 17cqh, calc(var(--mc-gutter) - 14px));
+  --mc-size: min(var(--mc-actor-size), 17cqh, calc(var(--mc-gutter) - 14px));
   --mc-b: max(10px, calc(var(--mc-gutter) - var(--mc-size) - 8px));
   --mc-y: min(var(--mc-lane), calc(100cqh - var(--mc-size) - 12px));
   --mc-rise: min(3cqh, 30px);
@@ -129,22 +171,22 @@ css+='''
   100% { transform: translate(var(--mc-a), var(--mc-y)); }
 }
 @keyframes t3-minecraft-enderman {
-  0% { background-image: var(--mc-sprite); transform: translate(var(--mc-a), var(--mc-y)); }
-  32% { background-image: var(--mc-sprite); transform: translate(var(--mc-b), calc(var(--mc-y) - 3cqh)); }
+  0% { background-image: var(--mc-actor-sprite); transform: translate(var(--mc-a), var(--mc-y)); }
+  32% { background-image: var(--mc-actor-sprite); transform: translate(var(--mc-b), calc(var(--mc-y) - 3cqh)); }
   32.1%, 32.35% { animation-timing-function: steps(1, end); transform: translate(var(--mc-b), calc(var(--mc-y) - 3cqh)); background-image: var(--mc-mist); }
   32.36%, 32.6% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-mist); }
-  32.61% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-sprite); }
-  65% { background-image: var(--mc-sprite); transform: translate(var(--mc-b), calc(var(--mc-y) - 6cqh)); }
+  32.61% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-actor-sprite); }
+  65% { background-image: var(--mc-actor-sprite); transform: translate(var(--mc-b), calc(var(--mc-y) - 6cqh)); }
   65.1%, 65.35% { animation-timing-function: steps(1, end); transform: translate(var(--mc-b), calc(var(--mc-y) - 6cqh)); background-image: var(--mc-mist); }
   65.36%, 65.6% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-mist); }
-  65.61% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-sprite); }
-  95.6% { background-image: var(--mc-sprite); transform: translate(var(--mc-b), var(--mc-y)); }
+  65.61% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-actor-sprite); }
+  95.6% { background-image: var(--mc-actor-sprite); transform: translate(var(--mc-b), var(--mc-y)); }
   95.7%, 95.95% { animation-timing-function: steps(1, end); transform: translate(var(--mc-b), var(--mc-y)); background-image: var(--mc-mist); }
   95.96%, 96.2% { transform: translate(calc(100cqw - var(--mc-size) - 8px), calc(100cqh - var(--mc-size) - 18px)); background-image: var(--mc-mist); }
-  96.21%, 97.7% { transform: translate(calc(100cqw - var(--mc-size) - 8px), calc(100cqh - var(--mc-size) - 18px)); background-image: var(--mc-sprite); }
+  96.21%, 97.7% { transform: translate(calc(100cqw - var(--mc-size) - 8px), calc(100cqh - var(--mc-size) - 18px)); background-image: var(--mc-actor-sprite); }
   97.8%, 98.05% { animation-timing-function: steps(1, end); transform: translate(calc(100cqw - var(--mc-size) - 8px), calc(100cqh - var(--mc-size) - 18px)); background-image: var(--mc-mist); }
   98.06%, 98.3% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-mist); }
-  98.31%, 100% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-sprite); }
+  98.31%, 100% { transform: translate(var(--mc-a), var(--mc-y)); background-image: var(--mc-actor-sprite); }
 }
 '''
 # Perimeter flight: vertical runs stay at the extreme edges; crossings pass
@@ -154,8 +196,44 @@ css+='@keyframes t3-minecraft-fly {\n'+'\n'.join(f'{t}% {{ transform: translate(
 css+=f'''
 /* Give perimeter crossings their own strip above the message rows. */
 {chat}{active}{viewport} {{ box-sizing: border-box; padding-top: 82px; }}
+{canvas} :is({main_composer}, [data-chat-composer-top-drawer]){main_chat_only},
+[data-composer-drawer-layer] :is([data-composer-command-drawer], [data-composer-stash-drawer]) {{
+  background-color: var(--mc-dock);
+  border: 1px solid var(--mc-dock-edge);
+  border-radius: 4px;
+  box-shadow: inset 0 1px var(--mc-dock-lip), inset 0 -2px var(--mc-dock-edge);
+}}
+{canvas} {main_composer}{main_chat_only}:focus-within {{ border-color: var(--ring, var(--accent)); }}
+:root.dark {{
+  --mc-dock: #262320; --mc-dock-edge: #4b4139; --mc-dock-lip: #625749;
+}}
+:root:not(.dark) {{
+  --mc-dock: #fbfdff; --mc-dock-edge: #a6b8c7; --mc-dock-lip: #fff;
+}}
+{canvas} :is({footer}, {now_line}, {reasoning}){main_chat_only}::before {{
+  content: "";
+  display: block;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: var(--mc-picked-sprite, var(--mc-status-sprite, var(--mc-openai))) no-repeat 0 0 / 800% 100%;
+}}
+{canvas} {now_line}{main_chat_only}::before,
+{canvas}{generating} {footer}{main_chat_only}::before {{
+  animation: t3-minecraft-feet 1.2s steps(8, end) infinite;
+  animation-play-state: var(--theme-motion-state, running);
+}}
+{canvas} {reasoning}{main_chat_only}::before {{
+  background-position-x: 57.142857%;
+}}
+{canvas}:has({now_line}{main_chat_only}) {footer}{main_chat_only}::before {{
+  content: none;
+}}
 @media (prefers-reduced-motion: reduce) {{
-  {all_slots} {{ animation: none !important; }}
+  {all_slots},
+  {canvas} :is({now_line}, {footer})::before {{ animation: none !important; }}
 }}
 '''
 reference=json.loads((ROOT/'public/downloads/nightfall-christmas.json').read_text())

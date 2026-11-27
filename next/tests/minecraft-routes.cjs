@@ -103,6 +103,34 @@ async function run(browser) {
   assert.equal(crowded.count,4);
   assert.equal(crowded.clipped,0,'Child mobs must stay within the canvas');
   assert.equal(crowded.overlap,0,'Ground mob lanes must not crowd each other');
+
+  await page.setContent(`<!doctype html><html class="dark"><style>${theme.css}
+    :root { --mc-picked-sprite: var(--mc-claude-sprite); }
+    </style><div data-chat-canvas>
+      <div data-v2-item-type="reasoning">Thinking</div>
+      <div data-workspace-area="composer">
+        <div data-chat-composer-main-surface><div data-chat-composer-footer></div></div>
+      </div>
+    </div>`);
+  const dock = page.locator('[data-chat-composer-main-surface]');
+  const footer = page.locator('[data-chat-composer-footer]');
+  const playback = () => footer.evaluate(el => getComputedStyle(el, '::before').animationName);
+  assert.equal(await dock.evaluate(el => getComputedStyle(el).borderRadius), '4px');
+  assert.equal(await playback(), 'none');
+  assert.equal(await footer.evaluate(el => getComputedStyle(el, '::before').backgroundImage ===
+    getComputedStyle(document.documentElement).getPropertyValue('--mc-claude').trim()), true);
+  assert.ok(parseFloat(await page.locator('[data-v2-item-type="reasoning"]').evaluate(el =>
+    getComputedStyle(el, '::before').backgroundPositionX)) > 50);
+  await footer.evaluate(el => {
+    const stop = document.createElement('button');
+    stop.setAttribute('aria-label', 'Stop generation');
+    el.append(stop);
+  });
+  assert.equal(await playback(), 't3-minecraft-feet');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await playback(), 'none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
   await writeFile(path.join(output, 'routes.json'), JSON.stringify(results,null,2)+'\n');
   await page.close();
   console.log(`Minecraft route checks passed: ${results.length} provider/state/viewport combinations, 1,200 samples each.`);
