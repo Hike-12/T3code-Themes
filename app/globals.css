@@ -129,10 +129,6 @@ ol { padding-left: 20px; color: var(--muted); }
 li { margin-block: 8px; padding-left: 4px; }
 code { font: 13px var(--mono); overflow-wrap: anywhere; }
 .install-note, .about p { color: var(--muted); max-width: 650px; }
-.screenshots { margin-top: 16px; }
-summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
-.screenshot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 880px; }
-.screenshot-grid img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
 .site-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip-link { position: absolute; left: 12px; top: 12px; transform: translateY(-180%); background: var(--panel); padding: 8px; z-index: 10; }
