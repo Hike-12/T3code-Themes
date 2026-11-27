@@ -19,7 +19,7 @@ const colorTokens = {
   accentForeground: 'accent-ink',
 };
 
-const models = { OpenAI: 'GPT-6 Astra', Claude: 'Claude Sonnet', Gemini: 'Gemini Pro', OpenCode: 'OpenCode' };
+const models = { OpenAI: '6.1 Sol High', Claude: 'Opus 5.5 High', Gemini: 'Gemini Pro', OpenCode: 'OpenCode' };
 const icons = { Claude: 'text-[#d97757]', Gemini: 'text-[#5b87bf]' };
 const emptyAgents = [];
 const frameSource = '<!doctype html><html lang="en" class="dark"><head><meta charset="utf-8"><title>Theme preview</title><link rel="stylesheet" href="/preview.css"></head><body id="preview-root"></body></html>';
@@ -100,7 +100,7 @@ function PreviewConversation({ slug, parent, agents }) {
             <span>Ask anything…</span>
             <div className="composer-tools" aria-hidden="true">
               <Paperclip size={14} />
-              <span data-chat-provider-model-picker="" aria-label={models[parent]}>{models[parent]}</span>
+              <span data-chat-provider-model-picker="" aria-label={`${parent} ${models[parent]}`}>{models[parent]}</span>
               <span className="submit" data-chat-composer-compact-send=""><ArrowUp size={14} /></span>
             </div>
           </div>

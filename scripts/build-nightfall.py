@@ -1,4 +1,4 @@
-"""Build the Nightfall Christmas T3 Code theme with snowfall and warm fairy lights on the composer box."""
+"""Build the Nightfall T3 Code theme with snowfall and warm fairy lights on the composer box."""
 from base64 import b64decode, b64encode
 from io import BytesIO
 import json
@@ -158,7 +158,7 @@ def snowman_css():
 def main():
     assets = render_assets()
     composer = '[data-chat-composer-main-surface]:not([data-side-chat-pane] *)'
-    css = f'''/* Nightfall Christmas: a light snow rim and warm fairy lights on the composer box. */
+    css = f'''/* Nightfall: a light snow rim and warm fairy lights on the composer box. */
 :root {{ --nightfall-bare: {assets['bare']['base']}; }}
 :root.dark {{
   --nightfall-snowy: {assets['dark']['base']};
@@ -261,7 +261,7 @@ def main():
     theme = {
         'version': 1,
         'id': 'nightfall-christmas',
-        'name': 'Nightfall Christmas',
+        'name': 'Nightfall',
         'appearance': 'dark',
         'canvas': dark['canvas'],
         'accent': dark['accent'],

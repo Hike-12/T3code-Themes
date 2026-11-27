@@ -73,6 +73,7 @@ async function testStudio(browser) {
   await page.getByRole('button', { name: 'Download JSON' }).waitFor();
   const reset = page.getByRole('button', { name: 'Reset' });
   assert.ok(await reset.isDisabled());
+  await page.getByLabel('Main thread model').selectOption('OpenAI');
   assert.equal(await page.getByRole('slider', { name: 'Reflection strength' }).count(), 0);
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundColor), 'rgb(16, 16, 16)');
@@ -173,8 +174,8 @@ async function testStudio(browser) {
   await reset.click();
   assert.ok(await reset.isDisabled());
   assert.equal(await page.getByRole('slider', { name: 'Claude lap time' }).getAttribute('aria-valuenow'), '72');
-  assert.equal((await readPond(frame))[0].duration, '27s');
-  assert.equal(await page.getByLabel('Main thread model').inputValue(), 'OpenAI');
+  assert.equal((await readPond(frame))[0].duration, '72s');
+  assert.equal(await page.getByLabel('Main thread model').inputValue(), 'Claude');
   assert.equal(await frame.locator('.demo .studio-group').count(), 0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal((await readPond(frame))[0].motion, 'none');
@@ -250,6 +251,7 @@ async function testStandaloneGemini(browser) {
   await page.goto(new URL('/koi-pond', site).href);
   const frame = page.frameLocator('.studio-viewport iframe');
   await frame.locator('.demo').waitFor();
+  await page.getByLabel('Main thread model').selectOption('OpenAI');
 
   // T3 Code renders a single delegated task outside the grouped timeline row.
   await frame.locator('.demo').evaluate(pond => {
@@ -431,14 +433,14 @@ async function testNightfall(browser) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(site);
-  assert.deepEqual(await page.getByRole('article').locator('h2').allTextContents(), ['Koi pond', 'Nightfall Christmas', 'Minecraft', 'Margin Notes', 'Dark texture']);
-  const gallery = page.getByRole('article', { name: 'Nightfall Christmas' });
+  assert.deepEqual(await page.getByRole('article').locator('h2').allTextContents(), ['Koi pond', 'Nightfall', 'Minecraft', 'Margin Notes', 'Dark texture']);
+  const gallery = page.getByRole('article', { name: 'Nightfall' });
   const originalResponse = await page.request.get(new URL('/downloads/nightfall-christmas.json', site).href);
   assert.ok(originalResponse.ok());
   const original = await originalResponse.json();
   assert.equal(original.id, 'nightfall-christmas');
   assert.ok(original.css.length < 100000);
-  await gallery.getByRole('link', { name: 'Try Nightfall Christmas' }).click();
+  await gallery.getByRole('link', { name: 'Try Nightfall' }).click();
   await page.waitForURL('**/nightfall-christmas');
   const frame = page.frameLocator('.studio-viewport iframe');
   const pond = frame.locator('.demo');
@@ -534,7 +536,18 @@ async function testNightfall(browser) {
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH });
   try {
-    await testNativeComposerGemini(browser);
+    const defaultsPage = await browser.newPage();
+  await defaultsPage.goto(site);
+  for (const name of ['Koi pond', 'Nightfall', 'Minecraft', 'Margin Notes', 'Dark texture']) {
+    const card = defaultsPage.getByRole('article', {name});
+    const frame = card.frameLocator('iframe');
+    const picker = frame.locator('[data-chat-provider-model-picker]');
+    await picker.waitFor();
+    assert.equal(await picker.textContent(), name === 'Koi pond' ? 'Opus 5.5 High' : '6.1 Sol High');
+    if (name === 'Koi pond') assert.equal((await readPond(frame))[0].track, 't3-koi-claude');
+  }
+  await defaultsPage.close();
+  await testNativeComposerGemini(browser);
     await testStudio(browser);
     await testStandaloneGemini(browser);
     await testBlockworks(browser);
