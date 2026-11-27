@@ -92,6 +92,7 @@ async function testStudio(browser) {
   await page.getByRole('button', { name: 'Download JSON' }).waitFor();
   assert.equal(await page.getByRole('slider', { name: 'Reflection strength' }).count(), 0);
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
+  assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundColor), 'rgb(16, 16, 16)');
   assert.ok(await frame.locator('.demo').evaluate(pond => {
     const canvas = pond.querySelector('[data-assistant-citation-viewport]').getBoundingClientRect();
     const viewport = pond.getBoundingClientRect();
@@ -108,8 +109,9 @@ async function testStudio(browser) {
   ]);
   await page.getByRole('radio', { name: 'Light', exact: true }).check();
   assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundImage), 'none');
+  assert.equal(await frame.locator('.demo').evaluate(pond => getComputedStyle(pond).backgroundColor), 'rgb(229, 229, 229)');
   assert.deepEqual((await readPond(frame)).slice(0, 3).map(fish => fish.color), [
-    '#e8eae1', '#ffab62', '#a9d7ff',
+    '#f2f2f2', '#e3d8c1', '#a9d7ff',
   ]);
 
   // Opening a child pane does not move the fish or give it a duplicate school.
@@ -193,6 +195,19 @@ async function testStudio(browser) {
   await finish('Claude').first().click();
   assert.equal((await readPond(frame)).length, 1);
 
+  const mainModel = page.getByLabel('Main thread model');
+  await mainModel.selectOption('OpenCode');
+  assert.deepEqual((await readPond(frame)).map(fish => [fish.track, fish.color]), [
+    ['t3-koi-opencode', '#eed6df'],
+  ]);
+  await mainModel.selectOption('OpenAI');
+  await add('OpenCode').click();
+  assert.deepEqual((await readPond(frame)).map(fish => fish.track), ['t3-koi-openai', 't3-koi-opencode']);
+  await finish('OpenCode').click();
+  assert.equal((await readPond(frame)).length, 1);
+  await setSlider(page.getByRole('slider', { name: 'OpenCode lap time' }), 62);
+  assert.match((await exportedTheme(page)).css, /--koi-opencode-time: 62s/);
+
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -270,7 +285,7 @@ async function testStandaloneGemini(browser) {
     pond.append(side);
   });
   assert.deepEqual((await readPond(frame)).map(fish => [fish.track, fish.color]), [
-    ['t3-koi-openai', '#e8eae1'],
+    ['t3-koi-openai', '#f2f2f2'],
     ['t3-koi-gemini', '#a9d7ff'],
   ]);
   assert.deepEqual(await frame.locator('aside [data-workspace-area="conversation"]').evaluate(pond => {
@@ -282,6 +297,13 @@ async function testStandaloneGemini(browser) {
     row.querySelector('.bg-info').className = 'bg-success';
   });
   assert.deepEqual((await readPond(frame)).map(fish => fish.track), ['t3-koi-openai']);
+
+  // OpenCode's native logo identifies the provider even when its model name is Claude.
+  await frame.locator('[data-chat-provider-model-picker]').first().evaluate(picker => {
+    picker.setAttribute('aria-label', 'Claude Sonnet');
+    picker.innerHTML = '<svg viewBox="0 0 32 40"><path d="M24 8H8V32H24V8ZM32 40H0V0H32V40Z"/></svg>';
+  });
+  assert.deepEqual((await readPond(frame)).map(fish => fish.track), ['t3-koi-opencode']);
 
   await page.close();
 }

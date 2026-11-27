@@ -1,16 +1,19 @@
+export const pondProviders = ['Claude', 'OpenAI', 'Gemini', 'OpenCode'];
+
 export const themes = {
   'koi-pond': {
     name: 'Koi pond',
-    description: 'Claude, OpenAI, and Gemini each have their own fish, with different colors and swimming patterns.',
+    description: 'Claude, OpenAI, Gemini, and OpenCode each have their own fish and swimming pattern.',
     studioDescription: 'Pick your water colors, set the pace, and see how the fish swim together.',
     action: 'Customize pond',
     download: '/downloads/koi-pond.json',
     defaults: {
-      dark: '#101414',
-      light: '#e8ede9',
+      dark: '#101010',
+      light: '#e5e5e5',
       'claude-time': 72,
       'openai-time': 27,
       'gemini-time': 43,
+      'opencode-time': 54,
     },
   },
   'dark-texture': {

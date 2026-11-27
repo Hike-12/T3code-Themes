@@ -3,12 +3,11 @@
 import Link from 'next/link';
 import { ArrowDown, ArrowLeft, Plus, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
-import { themes } from '../themes';
+import { pondProviders, themes } from '../themes';
 import { ThemePreview, useTheme } from './theme-preview';
 import { DownloadAction, RangeField, SwitchField } from './ui';
 import '../studio.css';
 
-const providers = ['Claude', 'OpenAI', 'Gemini'];
 const agentLimit = 3;
 const backgrounds = [['dark', 'Dark base'], ['light', 'Light base']];
 
@@ -18,7 +17,7 @@ function configureTheme(base, values, isPond) {
   let css;
 
   if (isPond) {
-    const speeds = providers.map(provider => {
+    const speeds = pondProviders.map(provider => {
       const name = provider.toLowerCase();
       return `--koi-${name}-time: ${values[name + '-time']}s;`;
     });
@@ -82,13 +81,13 @@ function SubagentTest({ parent, setParent, agents, running, spawn, finish, disab
       <fieldset className="school-fields" disabled={disabled}>
         <label className="parent-control">Main thread model
           <select value={parent} onChange={event => setParent(event.target.value)}>
-            {providers.map(provider => <option key={provider}>{provider}</option>)}
+            {pondProviders.map(provider => <option key={provider}>{provider}</option>)}
           </select>
         </label>
         <div className="add-agent-control" role="group" aria-labelledby="add-agent-label">
           <span id="add-agent-label">Add a subagent</span>
           <div className="add-agents">
-            {providers.map(provider => (
+            {pondProviders.map(provider => (
               <button className="open-theme" type="button" key={provider} onClick={() => spawn(provider)} disabled={running >= agentLimit} aria-label={'Add ' + provider + ' subagent'}>
                 <Plus size={15} aria-hidden="true" /> {provider}
               </button>
@@ -208,7 +207,7 @@ export function ThemeStudio({ slug }) {
                 {isPond && (
                   <fieldset>
                     <legend>Fish movement</legend>
-                    {providers.map(provider => {
+                    {pondProviders.map(provider => {
                       const name = provider.toLowerCase() + '-time';
                       return <RangeField key={name} name={name} label={provider + ' lap time'} min={10} max={120} unit=" s" value={values[name]} onChange={updateValue} disabled={!configured} />;
                     })}

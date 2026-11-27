@@ -19,7 +19,7 @@ const colorTokens = {
   accentForeground: 'accent-ink',
 };
 
-const models = { OpenAI: 'GPT-6 Astra', Claude: 'Claude Sonnet', Gemini: 'Gemini Pro' };
+const models = { OpenAI: 'GPT-6 Astra', Claude: 'Claude Sonnet', Gemini: 'Gemini Pro', OpenCode: 'OpenCode' };
 const icons = { Claude: 'text-[#d97757]', Gemini: 'text-[#5b87bf]' };
 const emptyAgents = [];
 const frameSource = '<!doctype html><html lang="en" class="dark"><head><meta charset="utf-8"><title>Theme preview</title><link rel="stylesheet" href="/preview.css"></head><body id="preview-root"></body></html>';
@@ -65,7 +65,9 @@ function School({ agents }) {
     <div className="studio-group" data-subagent-group="">
       <button type="button" tabIndex={-1} aria-expanded="true" aria-description={summary} aria-label={`${agents.length} ${agents.length === 1 ? 'subagent' : 'subagents'}`}>
         <span aria-hidden="true">
-          {agents.map((agent, slot) => <span key={slot}><span className={icons[agent.provider]} /></span>)}
+          {agents.map((agent, slot) => (
+            <span key={slot}><span className={icons[agent.provider]} data-provider-kind={agent.provider.toLowerCase()} /></span>
+          ))}
         </span>
         <span><span>{summary}</span><span className={running ? 'text-info' : undefined} /></span>
       </button>
